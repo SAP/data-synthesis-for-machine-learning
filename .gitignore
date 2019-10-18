@@ -1,0 +1,19 @@
+**/.idea/
+
+*.pyc
+**/__pycache__/
+**/.ipynb_checkpoints/
+
+**/db\.sqlite3
+
+**/\.DS_Store
+
+ds4ml/**/*
+
+# setuptools
+build/
+dist/
+
+*.egg-info/**/*
+
+*.csv

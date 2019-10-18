@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Evaluation Report</title>
+    <style>
+        * {
+            font-family: Arial, sans-serif;
+        }
+        html {
+            background: white;
+        }
+        .container {
+            margin: auto;
+            width: 1280px;
+            max-width: 1280px;
+            background: #80808029;
+        }
+        .content {
+            padding: 0 10px 20px 10px;
+        }
+        section {
+            padding: 10px 0;
+        }
+        h2 {
+            background: black;
+            color: white;
+            margin: 0;
+            height: 48px;
+            line-height: 2;
+            width: 1280px;
+        }
+        table {
+            width: 100%;
+            max-width: 100%;
+            background-color: #fff;
+            border-collapse: collapse;
+        }
+        table th, td {
+            text-align: center;
+            padding: 5px;
+            vertical-align: top;
+            border: 1px solid #ddd;
+            font-weight: normal;
+        }
+        table {
+            border: none;
+        }
+    
+        table tbody tr td:not(:first-child), ul>li{
+            font-size: 0.9em;
+        }
+        .content ul {
+            padding: 20px;
+        }
+        div.half-img {
+            float: right;
+            width: 45%;
+        }
+        div.wrapper {
+            height: auto;
+            overflow: auto;
+            padding: 5px 0;
+        }
+        div.table-wrapper {
+            overflow: auto;
+            float: left;
+        }
+        div.half-wrapper {
+            width: 54%;
+        }
+        div.full-wrapper {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .tab {
+            background-color: #f1f1f1;
+            overflow-x: auto;
+        }
+        .tab > a {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            border-top: 4px solid #f1f1f1;
+            font-size: 16px;
+            border-right: 1px solid #E0E0E0;
+        }
+        .tab > a:hover {
+            background-color: #ddd;
+            border-top: 4px solid #ddd;
+            cursor: pointer;
+        }
+        .tab > a.active {
+            background-color: white;
+            border-top: 4px solid #38bbe8;
+        }
+
+        .dropdown {
+            float: left;
+            overflow: hidden;
+        }
+        .dropdown > .more {
+            font-size: 16px;
+            border: none;
+            outline: none;
+            padding: 14px 16px;
+            font-family: inherit;
+            margin: 0;
+            display: block;
+            border-top: 4px solid #f1f1f1;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            z-index: 1;
+            margin-top: 2px;
+        }
+        .dropdown-content > a {
+            float: none;
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+            border-top: none;
+            border-left: 4px solid #f9f9f9;
+        }
+        .dropdown > .more:hover,
+        .dropdown-content > a:hover {
+            background-color: #ddd;
+            cursor: pointer;
+        }
+        .dropdown > .more:hover {
+            border-top: 4px solid #ddd;
+        }
+        .dropdown-content > a.active {
+            background-color: white;
+            border-left: 4px solid #38bbe8;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .tabcontent {
+            display: none;
+            padding: 8px 4px 8px 4px;
+            border-top: none;
+            background: white;
+        }
+
+        div::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+            background-color: #F5F5F5;
+        }
+        div::-webkit-scrollbar-thumb {
+            background-color: darkgrey;
+            outline: 1px solid slategrey;
+        }
+    </style>
+    <script>
+    function openColumn(evt, column) {
+        var i, tabcontent, tablinks;
+        section = evt.target.parentNode.parentNode;
+        if (section.tagName != 'SECTION' && section.className == 'dropdown') {
+            section = section.parentNode.parentNode;
+        }
+
+        tabcontent = section.getElementsByClassName("tabcontent");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+        }
+        tablinks = section.getElementsByClassName("tablinks");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        section.querySelectorAll('.tabContent,.' + column)[0].style.display = "block";
+        evt.currentTarget.className += " active";
+    };
+
+    const adapt = (tab) => {
+        width = tab.offsetWidth;
+        items = Array.from(tab.children);
+        wholeWidth = items.reduce((acc, cur) => {
+                                return cur.offsetWidth + acc;
+                            }, 0);
+        if (wholeWidth > width) {
+            tab.insertAdjacentHTML('beforeend',
+                `<div class="dropdown">
+                <a type="button" class="more">
+                    <span>More &darr;</span>
+                </a>
+                <div class="dropdown-content"></div>
+                </div>`);
+            moreWidth = tab.querySelector('.more').offsetWidth;
+            for (i = 0, partWidth = moreWidth; i < items.length; i++) {
+                if (partWidth < width) {
+                    partWidth += items[i].offsetWidth;
+                } else {
+                    last = items[i - 1];
+                    dropDown = tab.querySelector('.dropdown');
+                    last.after(dropDown);
+                    dropDownList = dropDown.querySelector('.dropdown-content');
+                    for (j = i - 1; j < items.length; j++) {
+                        dropDownList.appendChild(items[j]);
+                    }
+                    break;
+                }
+            }
+        }
+    };
+
+    const load = () => {
+        tabs = document.querySelectorAll('.tab');
+        tabs.forEach((tab) => adapt(tab));
+    };
+    window.addEventListener('resize', load);
+    window.addEventListener('load', load);
+    </script>
+</head>
+<body class="container">
+<h2 align="center">${title}</h2>
+
+<div class="content">
+<section>
+<h3 align="center">Basic Information</h3>
+% for basic in basics:
+<div class="table-wrapper full-wrapper">
+<table class="table">
+    <thead>
+        <th></th>
+        % for column in basic['columns']:
+        <th>${column}</th>
+        % endfor
+    </thead>
+    <tbody>
+    % for idx, val in enumerate(basic['index']):
+        <tr>
+            <td>${val}</td>
+            % for datum in basic['data'][idx]:
+            <td>${datum}</td>
+            % endfor
+        </tr>
+    % endfor
+    </tbody>
+</table>
+</div>
+<ul>
+    <li style="list-style-type:none">  range: [0,1] The smaller the value is, the closer the synthesized data is to the raw data.</li>
+    <li>err: relative error, a measure of the discrepancy between raw data and synthesized data.</li>
+    <li>jsd: Jensen-Shannon divergence, a measure of the similarity between the probability distribution of raw and synthesized data.</li>
+</ul>
+% endfor
+</section>
+
+<section>
+<h3 align="center">Attribute Distribution</h3>
+<div class="tab">
+    <%
+        actives = [ ' active' if idx == 0 else '' for idx in range(len(dists))]
+    %>
+    % for active, entry in zip(actives, dists):
+    <a class="tablinks ${active}" onclick="openColumn(event, '${entry['name']}')">${entry['name']}</a>
+    % endfor
+</div>
+<%
+    displays = [ 'block' if idx == 0 else 'none' for idx in range(len(dists))]
+%>
+% for display, entry in zip(displays, dists):
+<div class="tabcontent ${entry['name']}" style="display: ${display};">
+    <div class="table-wrapper full-wrapper">
+    <table class="table">
+        <thead>
+            <th></th>
+            % for col in entry['columns']:
+            <th>${col}</th>
+            % endfor
+        </thead>
+        <tbody>
+            <tr>
+                <td>raw</td>
+                % for datum in entry['data'][0]:
+                <td>${datum}</td>
+                % endfor
+            </tr>
+            <tr>
+                <td>synth</td>
+                % for datum in entry['data'][1]:
+                <td>${datum}</td>
+                % endfor
+            </tr>
+        </tbody>
+    </table>
+    </div>
+    <div style="display:table; margin: 0 auto;">${entry['path']}</div>
+</div>
+% endfor
+
+</section>
+
+<section>
+<h3 align="center">Pair-wise Correlation</h3>
+% for idx, entry in zip(['Raw Dataset', 'Synthesized Dataset'], corrs):
+    <span>${idx}</span>
+    <div class="wrapper">
+    <div class="table-wrapper half-wrapper">
+    <table class="table">
+    <thead>
+        <th></th>
+        % for column in entry['matrix']['columns']:
+        <th>${column}</th>
+        % endfor
+    </thead>
+    <tbody>
+    % for idx, val in enumerate(entry['matrix']['index']):
+        <tr>
+            <th>${val}</th>
+            % for datum in entry['matrix']['data'][idx]:
+            <td>${datum}</td>
+            % endfor
+        </tr>
+    % endfor
+    </tbody>
+    </table>
+    </div>
+        <div class="half-img">${entry['path']}</div>
+    </div>
+% endfor
+ <ul>
+    <li style="list-style-type:none">range: [0,1] The closer the value is 1, the stronger the correlation is.</li>
+    <li>By comparing the results before and after, it can reflect whether the synthesized data has maintained the correlation among columns</li>
+ </ul>
+</section>
+
+% if len(svms) > 0:
+<section>
+<h3 align="center">Misclassification Rate by SVM Classifier</h3>
+<div class="tab">
+    <%
+        svm_actives = [ ' active' if idx == 0 else '' for idx in range(len(svms))]
+    %>
+    % for active, entry in zip(svm_actives, svms):
+    <a class="tablinks ${active}" onclick="openColumn(event, '${entry['column']}')">${entry['column']}</a>
+    % endfor
+</div>
+<%
+    svm_displays = [ 'block' if idx == 0 else 'none' for idx in range(len(svms))]
+%>
+% for display, entry in zip(svm_displays, svms):
+<div class="tabcontent ${entry['column']}" style="display: ${display};">
+    % if len(entry['path']) == 1:
+    <div style="display:block; text-align: center;">${entry['path'][0]}</div>
+    % endif
+    % if len(entry['path']) == 2:
+    <div style="display:contents;float:left;">${entry['path'][0]}</div>
+    <div style="display:contents;float:right;">${entry['path'][1]}</div>
+    % endif
+</div>
+% endfor
+<ul>
+    <li>After synthesis, if the misclassification rate approximates to the rate of original data, the synthesized dataset can be used for SVM classifier modeling</li>
+</ul>
+</section>
+% endif
+</div>
+</body>
+</html>

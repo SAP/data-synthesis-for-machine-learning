@@ -1,0 +1,8 @@
+mako>=1.0.12
+matplotlib>=2.2.2
+numpy>=1.14.3
+pandas>=0.24.2
+scikit-learn>=0.20.2
+pytest>=4.6.2
+python-dateutil>=2.7.3
+setuptools>=39.1.0
