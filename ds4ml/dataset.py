@@ -139,8 +139,10 @@ class DataSet(DataFrame):
         cond_prs = noisy_conditionals(network, indexes, epsilon / 2)
 
         sampling = self._sampling_dataset(network, cond_prs, self.shape[0])
-        frame = DataFrame(columns=self.columns)
+        frame = DataFrame(columns=columns)
         for col, attr in self.items():
+            if col in deletes:
+                continue
             if col in pseudonyms:
                 frame[col] = attr.pseudonymize()
                 continue
