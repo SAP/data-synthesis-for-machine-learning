@@ -7,9 +7,12 @@ Two parts are included in this tool:
   Synthesize a dataset based on the original dataset. It accepts CSV data as input, and output a synthesized dataset based on Differential Privacy. The algorithm in the data synthesizer reference to the paper - [PrivBayes](http://dimacs.rutgers.edu/~graham/pubs/papers/PrivBayes.pdf).
 + Data utility evaluation  
   Evaluate the data utility for the synthesized dataset. The original dataset and the synthesized dataset as the input, one utility evaluation report will be generated with several indicators.
+### Positioning
+Our project is independent of any DB and we are focus on the later machine learning. There is also one data anonymization feature in the HANA(not open sourced). If a customer does not have HANA and it's about a machine learning use case, please use our tool. If a customer has HANA(and even it's a machine learning use case), please go for the HANA feature.
++ Exception: If such a customer wants to try out the algorithm implemented in our tool to figure out if it provides better results than HANA, please use our tool.
 
 ## Quickstart
-One demo dataset (part of public dataset from [Adult](https://archive.ics.uci.edu/ml/datasets/Adult)) and its synthesized dataset and the utility evaluation report can be got in the folder *example* for your reference.
+There are one demo dataset (part of the public dataset from [Adult](https://archive.ics.uci.edu/ml/datasets/Adult)), the synthesized dataset and the utility evaluation report in the folder *example* for your reference.
 ### Prerequisites
 + Install python >= 3.6.0 from [python.org](https://www.python.org/)
 + Install project: run `pip install ds4ml`;
@@ -105,4 +108,7 @@ Please check our [Contribution Guidelines](https://github.com/SAP/data-synthesis
 
 ## License
 Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v.2 except as noted otherwise in the [LICENSE file](https://github.com/SAP/data-synthesis-for-machine-learning/blob/master/LICENSE).
+
+
+
 
