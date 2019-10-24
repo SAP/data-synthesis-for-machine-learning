@@ -16,7 +16,7 @@ There are one demo dataset (part of the public dataset from [Adult](https://arch
 ### Prerequisites
 + Install python >= 3.6.0 from [python.org](https://www.python.org/)
 + Install project: run `pip install ds4ml`;
-+ Download demo data from *example/adult.csv*
++ Download demo data from [example/adult.csv](https://github.com/SAP/data-synthesis-for-machine-learning/blob/master/example/adult.csv)
 ### Procedure
   There are two parts in the project, data synthesizer and data utility evaluation.
 + Synthesizer:  

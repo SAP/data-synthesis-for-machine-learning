@@ -10,7 +10,7 @@ This folder contains one demo dataset(adult.csv), its synthesized dataset(adult_
 
     Two indicators are included to display the distribution similarity.
     - *err*, is the relative error of two values. Here it measures the discrepancy of each column between the original data 
-      (e.g. *adult.txt*) and synthesized data (e.g. *adult_a.csv*).
+      (e.g. *adult.csv*) and synthesized data (e.g. *adult_new.csv*).
     - *jsd*, is Jensen-Shannon divergence. It is a measure of the similarity between the probability distribution of the original and synthesized data.
 
 + Attribute Distribution
