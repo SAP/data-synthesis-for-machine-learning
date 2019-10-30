@@ -1,15 +1,14 @@
 # Data Synthesis for Machine Learning
 
 ## Overview
-With the enforcement of a series of data privacy protection regulations such as GDPR, data sharing has become a tricky problem. This tool intends to facilitate data sharing from the customer by synthesizing a dataset based on the original dataset for later machine learning. 
-Two parts are included in this tool:
+The recent enforcement of data privacy protection regulations, such as GDPR, has made data sharing more difficult. This tool intends to facilitate data sharing from a customer by synthesizing a dataset based on the original dataset for later machine learning. 
+There are two parts to this tool:
 + Data synthesizer  
   Synthesize a dataset based on the original dataset. It accepts CSV data as input, and output a synthesized dataset based on Differential Privacy. The algorithm in the data synthesizer reference to the paper - [PrivBayes](http://dimacs.rutgers.edu/~graham/pubs/papers/PrivBayes.pdf).
 + Data utility evaluation  
   Evaluate the data utility for the synthesized dataset. The original dataset and the synthesized dataset as the input, one utility evaluation report will be generated with several indicators.
 ### Positioning
-Our project is independent of any DB and we are focus on the later machine learning. There is also one data anonymization feature in the HANA(not open sourced). If a customer does not have HANA and it's about a machine learning use case, please use our tool. If a customer has HANA(and even it's a machine learning use case), please go for the HANA feature.
-+ Exception: If such a customer wants to try out the algorithm implemented in our tool to figure out if it provides better results than HANA, please use our tool.
+Our project is independent of any DB and we are focus on the later machine learning. There is also one data anonymization feature in the HANA (not open sourced). Of a customer has HANA, please use this feature within HANA. If a customer does not have HANA and it's about a machine learning use case, please use our tool. Exception: If such a customer wants to try out the algorithm implemented in our tool to figure out if it provides better results than HANA, please use our tool.
 
 ## Quickstart
 There are one demo dataset (part of the public dataset from [Adult](https://archive.ics.uci.edu/ml/datasets/Adult)), the synthesized dataset and the utility evaluation report in the folder *example* for your reference.
