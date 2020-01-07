@@ -22,9 +22,9 @@ def main():
     group.add_argument("-h", "--help", action="help",
                        help="show this help message and exit")
     group.add_argument('--pseudonym', metavar='LIST',
-                       help='set candidate columns separated by a comma, which will be '
-                            'replaced with a pseudonym. '
-                            'It only works on the string column.')
+                       help='set candidate columns separated by a comma, which '
+                            'will be replaced with a pseudonym. It only works '
+                            'on the string column.')
     group.add_argument('--delete', metavar='LIST',
                        help='set columns separated by a comma, which will be '
                             'deleted when synthesis.')

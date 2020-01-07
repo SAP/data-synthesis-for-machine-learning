@@ -27,11 +27,20 @@ def has_header(path, encoding='utf-8'):
     Auto-detect if csv file has header.
     """
     from pandas import read_csv
+
+    def _offset_stream():
+        from io import StringIO
+        if isinstance(path, StringIO):
+            path.seek(0)
+
+    _offset_stream()
     df0 = read_csv(path, header=None, nrows=10, skipinitialspace=True,
                    encoding=encoding)
+    _offset_stream()
     df1 = read_csv(path, nrows=10, skipinitialspace=True, encoding=encoding)
     # If the column is numerical, its dtype is different without/with header
     # TODO how about categorical columns
+    _offset_stream()
     return tuple(df0.dtypes) != tuple(df1.dtypes)
 
 
