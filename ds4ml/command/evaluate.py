@@ -13,7 +13,8 @@ from ds4ml.utils import read_data_from_csv, CustomFormatter, str_to_list
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Evaluate the utility of synthesized dataset compared with the source dataset.',
+        description='Evaluate the utility of synthesized dataset compared with '
+                    'the source dataset.',
         formatter_class=CustomFormatter,
         add_help=False)
     # positional arguments
@@ -33,15 +34,15 @@ def main():
                        help='set additional values to recognize as NA/NaN; ('
                             'default null values are from pandas.read_csv)')
     group.add_argument('-o', '--output', metavar='FILE', default='report.html',
-                       help='set output path for evaluation report; (default is '
-                            '"report.html" under current work directory)')
+                       help='set output path for evaluation report; (default '
+                            'is "report.html" under current work directory)')
 
     group = parser.add_argument_group('advanced arguments')
     group.add_argument('-t', '--test',
                        help='set test dataset for classification or regression '
-                            'task; (default take 20 percent from source dataset)')
+                            'task; (default take 20% from source dataset)')
     group.add_argument('--class-label', metavar='LIST',
-                       help='set column name as a class label for classification '
+                       help='set column name as class label for classification '
                             'or regression task; supports one or multiple '
                             'columns (separated by comma)')
 
