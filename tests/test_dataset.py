@@ -117,5 +117,5 @@ def test_synthesize_for_privacy():
         df1 = set1.synthesize(epsilon=epsilon)
         df2 = set2.synthesize(epsilon=epsilon)
         counts[0] += ((df1['ColA'] == 65) & (df1['ColB'] == 65)).sum()
-        counts[1] += ((df2['ColA'] == 65) & (df2['ColB'] == 65)).sum()
+        counts[1] += ((df2['ColA'] == 65) & (df2['ColB'] == 66)).sum()
     assert counts[0] / (runs * 200) <= exp(epsilon) * counts[1] / (runs * 200)

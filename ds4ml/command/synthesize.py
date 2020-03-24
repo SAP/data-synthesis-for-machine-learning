@@ -63,7 +63,7 @@ def main():
     na_values = str_to_list(args.na_values)
     retains = str_to_list(args.retain)
     header = None if args.no_header else 'infer'
-    sep = args.sep
+    sep = ',' if args.sep is None else args.sep
 
     data = read_data_from_csv(args.file, na_values=na_values, header=header, sep=sep)
 

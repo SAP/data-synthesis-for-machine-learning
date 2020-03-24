@@ -374,7 +374,7 @@ def mutual_information(child: Series, parents: DataFrame):
     if parents.shape[1] == 1:
         parents = parents.iloc[:, 0]
     else:
-        parents = parents.apply(lambda x: ' '.join(x.get_values()), axis=1)
+        parents = parents.apply(lambda x: ' '.join(x.array), axis=1)
     return mutual_info_score(child, parents)
 
 
