@@ -38,6 +38,12 @@ def main():
                        help='indicate there is no header in a CSV file, and '
                             'will take [#0, #1, #2, ...] as header. (default: '
                             'the tool will try to detect and take actions)')
+    group.add_argument('--records', metavar='INT', type=int,
+                       help='specify the records you want to generate; default '
+                            'is the same records with the original dataset')
+
+    group.add_argument('--sep', metavar='String',
+                    help='specify the delimiter of the input file')
 
     group = parser.add_argument_group('advanced arguments')
     group.add_argument('-e', '--epsilon', metavar='FLOAT', type=float,
@@ -57,8 +63,9 @@ def main():
     na_values = str_to_list(args.na_values)
     retains = str_to_list(args.retain)
     header = None if args.no_header else 'infer'
+    sep = args.sep
 
-    data = read_data_from_csv(args.file, na_values=na_values, header=header)
+    data = read_data_from_csv(args.file, na_values=na_values, header=header, sep=sep)
 
     def complement(attrs, full):
         return set(attrs or []) - set(full)
@@ -77,11 +84,11 @@ def main():
     dataset = DataSet(data, categories=categories)
     synthesized = dataset.synthesize(epsilon=args.epsilon,
                                      pseudonyms=pseudonyms, deletes=deletes,
-                                     retains=retains)
+                                     retains=retains, records=args.records)
     if args.output is None:
         name = file_name(args.file)
         args.output = f'{name}_a.csv'
-    synthesized.to_csv(args.output, index=False)
+    synthesized.to_csv(args.output, index=False, sep=sep)
 
     duration = time.time() - start
     print(f'Synthesized data {args.output} in {round(duration, 2)} seconds.')

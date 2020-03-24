@@ -102,7 +102,7 @@ class DataSet(DataFrame):
         return frame
 
     def synthesize(self, epsilon=0.1, degree=2,
-                   pseudonyms=None, deletes=None, retains=None):
+                   pseudonyms=None, deletes=None, retains=None, records=None):
         """
         Synthesize data set by a bayesian network to infer attributes'
         dependence relationship and differential privacy to keep differentially
@@ -138,7 +138,8 @@ class DataSet(DataFrame):
                                retains=retains)
         cond_prs = noisy_conditionals(network, indexes, epsilon / 2)
 
-        sampling = self._sampling_dataset(network, cond_prs, self.shape[0])
+        records = records if records is not None else self.shape[0]
+        sampling = self._sampling_dataset(network, cond_prs, records)
         frame = DataFrame(columns=columns)
         for col, attr in self.items():
             if col in deletes:

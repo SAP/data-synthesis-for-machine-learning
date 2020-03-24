@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 # Utilities for Input/Output
 
 
-def has_header(path, encoding='utf-8'):
+def has_header(path, encoding='utf-8', sep=','):
     """
     Auto-detect if csv file has header.
     """
@@ -35,16 +35,16 @@ def has_header(path, encoding='utf-8'):
 
     _offset_stream()
     df0 = read_csv(path, header=None, nrows=10, skipinitialspace=True,
-                   encoding=encoding)
+                   encoding=encoding, sep=sep)
     _offset_stream()
-    df1 = read_csv(path, nrows=10, skipinitialspace=True, encoding=encoding)
+    df1 = read_csv(path, nrows=10, skipinitialspace=True, encoding=encoding, sep=sep)
     # If the column is numerical, its dtype is different without/with header
     # TODO how about categorical columns
     _offset_stream()
     return tuple(df0.dtypes) != tuple(df1.dtypes)
 
 
-def read_data_from_csv(path, na_values=None, header=None):
+def read_data_from_csv(path, na_values=None, header=None, sep=","):
     """
     Read data set from csv or other delimited text file. And remove empty
     columns (all values are null).
@@ -52,14 +52,14 @@ def read_data_from_csv(path, na_values=None, header=None):
     from pandas import read_csv
 
     try:
-        header = header or ('infer' if has_header(path) else None)
+        header = header or ('infer' if has_header(path, sep=sep) else None)
         df = read_csv(path, skipinitialspace=True, na_values=na_values,
-                      header=header)
+                      header=header, sep=sep)
     except (UnicodeDecodeError, NameError):
-        header = header or ('infer' if has_header(path, encoding='latin1')
+        header = header or ('infer' if has_header(path, encoding='latin1', sep=sep)
                             else None)
         df = read_csv(path, skipinitialspace=True, na_values=na_values,
-                      header=header, encoding='latin1')
+                      header=header, encoding='latin1', sep=sep)
 
     # Remove columns with empty active domain, i.e., all values are missing.
     before_attrs = set(df.columns)
