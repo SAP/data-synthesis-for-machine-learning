@@ -5,7 +5,8 @@ import pytest
 from ds4ml.utils import (plot_histogram,
                          plot_confusion_matrix,
                          plot_heatmap, write_csv, mutual_information,
-                         normalize_range)
+                         normalize_range, is_datetime, str_to_list,
+                         normalize_distribution, has_header)
 
 
 def test_plot_confusion_matrix_output_string():
@@ -113,4 +114,44 @@ def test_normalize_range_floats():
         bins = randint(8, 30)
         floats = normalize_range(start, stop, bins)
         assert len(floats) <= bins + 1
+
+
+def test_is_datetime():
+    date = 'monday'
+    idt = is_datetime(date)
+    assert idt is False
+    time = '2020-03-01'
+    idt = is_datetime(time)
+    assert idt is True
+    value = 'high school'
+    idt = is_datetime(value)
+    assert idt is False
+
+
+def test_str_to_list():
+    iva = '1,3,4,5'
+    res = str_to_list(iva)
+    assert res == ['1', '3', '4', '5']
+    iva = 'name,age,weight,height'
+    res = str_to_list(iva)
+    assert res == ['name', 'age', 'weight', 'height']
+
+
+def test_normalize_distribution():
+    frequencies = 100
+    res = normalize_distribution(frequencies)
+    assert res == 1.0
+    frequencies = 500000
+    res = normalize_distribution(frequencies)
+    assert res == 1.0
+
+
+def test_has_header():
+    from .testdata import adult_with_head, adult_without_head
+    import io
+    hasheader = has_header(io.StringIO(adult_with_head))
+    assert hasheader is True
+    hasheader = has_header(io.StringIO(adult_without_head))
+    assert hasheader is False
+
 

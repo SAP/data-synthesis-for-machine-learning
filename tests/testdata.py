@@ -69,3 +69,13 @@ adults02 = DataFrame([
     [43, 'HS-grad', 'Husband', 'Male', '>50K', '06/23/1976'],
     [44, 'Assoc-acdm', 'Not-in-family', 'Male', '<=50K', '06/23/1975'],
 ], columns=['age', 'education', 'relationship', 'sex', 'salary', 'birth'])
+
+adult_with_head = 'age, education, relationship, sex, salary, birth\n' \
+           '19, HS-grad, Own-child, Male, <=50K, 07/11/2000\n' \
+           '41, Masters, Husband, Male, <=50K, 06/25/1978\n' \
+           '44, HS-grad, Husband, Male, <=50K, 06/23/1975'
+
+adult_without_head = '19, HS-grad, Own-child, Male, <=50K, 07/11/2000\n' \
+           '41, Masters, Husband, Male, <=50K, 06/25/1978\n' \
+           '40, Masters, Husband, Female, <=50K, 06/21/1977\n' \
+           '44, HS-grad, Husband, Male, <=50K, 06/23/1975'
