@@ -75,7 +75,15 @@ adult_with_head = 'age, education, relationship, sex, salary, birth\n' \
            '41, Masters, Husband, Male, <=50K, 06/25/1978\n' \
            '44, HS-grad, Husband, Male, <=50K, 06/23/1975'
 
+
 adult_without_head = '19, HS-grad, Own-child, Male, <=50K, 07/11/2000\n' \
            '41, Masters, Husband, Male, <=50K, 06/25/1978\n' \
            '40, Masters, Husband, Female, <=50K, 06/21/1977\n' \
            '44, HS-grad, Husband, Male, <=50K, 06/23/1975'
+
+
+adult_with_head_res = DataFrame([
+    [19, 'HS-grad', 'Own-child', 'Male', '<=50K', '07/11/2000'],
+    [41, 'Masters', 'Husband', 'Male', '<=50K', '06/25/1978'],
+    [44, 'HS-grad', 'Husband', 'Male', '<=50K', '06/23/1975']
+], columns=['age', 'education', 'relationship', 'sex', 'salary', 'birth'])

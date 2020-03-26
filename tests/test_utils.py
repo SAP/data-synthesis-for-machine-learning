@@ -6,7 +6,8 @@ from ds4ml.utils import (plot_histogram,
                          plot_confusion_matrix,
                          plot_heatmap, write_csv, mutual_information,
                          normalize_range, is_datetime, str_to_list,
-                         normalize_distribution, has_header)
+                         normalize_distribution, has_header,
+                         read_data_from_csv)
 
 
 def test_plot_confusion_matrix_output_string():
@@ -138,12 +139,11 @@ def test_str_to_list():
 
 
 def test_normalize_distribution():
-    frequencies = 100
+    frequencies = [3, 3, 2]
     res = normalize_distribution(frequencies)
-    assert res == 1.0
-    frequencies = 500000
-    res = normalize_distribution(frequencies)
-    assert res == 1.0
+    assert res[0] == 0.375
+    assert res[1] == 0.375
+    assert res[2] == 0.25
 
 
 def test_has_header():
@@ -155,3 +155,9 @@ def test_has_header():
     assert hasheader is False
 
 
+def test_read_data_from_csv():
+    from pandas import DataFrame
+    from .testdata import adult_with_head, adult_with_head_res
+    import io
+    data = read_data_from_csv(io.StringIO(adult_with_head))
+    assert data.equals(DataFrame(adult_with_head_res)) is True
