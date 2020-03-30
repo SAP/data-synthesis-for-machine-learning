@@ -112,7 +112,7 @@ class DataSet(DataFrame):
         pseudonyms = pseudonyms or []
         retains = retains or []
 
-        columns = [col for col in self.columns if col not in deletes]
+        columns = [col for col in self.columns.values if col not in deletes]
         nodes = set()  # nodes for bayesian networks
         for col in columns:
             if col in pseudonyms or (
