@@ -40,7 +40,7 @@ def main():
     group = parser.add_argument_group('advanced arguments')
     group.add_argument('-t', '--test',
                        help='set test dataset for classification or regression '
-                            'task; (default take 20% from source dataset)')
+                            'task; (default take 20%% from source dataset)')
     group.add_argument('--class-label', metavar='LIST',
                        help='set column name as class label for classification '
                             'or regression task; supports one or multiple '
