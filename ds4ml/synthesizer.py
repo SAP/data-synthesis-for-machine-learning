@@ -206,20 +206,29 @@ def noisy_distributions(dataset, columns, epsilon):
 
 def noisy_conditionals(network, dataset, epsilon):
     """
-    Algorithm 3, Page 20: noisy conditional distribution probability
+    Algorithm 1, Page 9: noisy conditional distribution probability
     """
     cond_prs = {}  # conditional probability distributions
 
     # distribution of one or more root node(s) in bayesian network
-    for col in network[0][1]:
-        freq = noisy_distributions(dataset, [col], epsilon)
-        prs = freq[[col, 'freq']].groupby(col).sum()['freq']
-        cond_prs[col] = normalize_distribution(prs).tolist()
+    root = network[0][1][0]
+    # attributes [1, k]
+    kattr = [root]
+    for child, _ in network[:len(network[-1][1])]:
+        kattr.append(child)
+
+    kfreq = noisy_distributions(dataset, kattr, epsilon)
+    root_prs = kfreq[[root, 'freq']].groupby(root).sum()['freq']
+    cond_prs[root] = normalize_distribution(root_prs).tolist()
 
     # distributions of other child node(s) in bayesian network
+    net_idx = 0
     for child, parents in network:
         cond_prs[child] = {}
-        freq = noisy_distributions(dataset, parents + [child], epsilon)
+        if net_idx < len(network[-1][1]):
+            freq = kfreq.copy().loc[:, parents + [child, 'freq']]
+        else:
+            freq = noisy_distributions(dataset, parents + [child], epsilon)
         freq = DataFrame(freq[parents + [child, 'freq']]
                          .groupby(parents + [child]).sum())
         if len(parents) == 1:
@@ -230,4 +239,5 @@ def noisy_conditionals(network, dataset, epsilon):
             for parent in product(*freq.index.levels[:-1]):
                 prs = normalize_distribution(freq.loc[parent]['freq']).tolist()
                 cond_prs[child][str(list(parent))] = prs
+        net_idx = net_idx + 1
     return cond_prs

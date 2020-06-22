@@ -34,3 +34,31 @@ def test_noisy_distributions():
     noisy = noisy_distributions(dataset, columns, epsilon)
     assert noisy.shape == (4, 3)
     assert len(noisy[noisy['freq'] >= 0]) == 4
+
+
+def test_noisy_conditionals():
+    from ds4ml.synthesizer import noisy_conditionals
+    from pandas import DataFrame
+    dataset = DataFrame([
+        [1, 0, 40],
+        [1, 1, 42],
+        [0, 0, 30],
+        [0, 1, 30],
+        [1, 1, 36],
+        [1, 1, 50],
+        [0, 0, 32],
+        [0, 0, 28]
+    ], columns=['salary', 'sex', 'age'])
+    epsilon = 0.05
+    network = [('salary', ['sex']), ('age', ['sex', 'salary'])]
+    noisy = noisy_conditionals(network, dataset, epsilon)
+    assert len(noisy['sex']) == 2
+    assert sum(noisy['sex']) == 1.0
+    assert len(noisy['salary']) == 2
+    assert '[0]' in noisy['salary']
+    assert '[1]' in noisy['salary']
+    assert len(noisy['age']) == 4
+    assert '[0, 0]' in noisy['age']
+    assert '[0, 1]' in noisy['age']
+    assert '[1, 0]' in noisy['age']
+    assert '[1, 1]' in noisy['age']
