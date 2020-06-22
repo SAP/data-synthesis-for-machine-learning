@@ -43,7 +43,7 @@ def main():
                             'is the same records with the original dataset')
 
     group.add_argument('--sep', metavar='String',
-                    help='specify the delimiter of the input file')
+                       help='specify the delimiter of the input file')
 
     group = parser.add_argument_group('advanced arguments')
     group.add_argument('-e', '--epsilon', metavar='FLOAT', type=float,
@@ -65,7 +65,8 @@ def main():
     header = None if args.no_header else 'infer'
     sep = ',' if args.sep is None else args.sep
 
-    data = read_data_from_csv(args.file, na_values=na_values, header=header, sep=sep)
+    data = read_data_from_csv(args.file, na_values=na_values, header=header,
+                              sep=sep)
 
     def complement(attrs, full):
         return set(attrs or []) - set(full)

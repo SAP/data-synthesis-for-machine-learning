@@ -113,7 +113,7 @@ def greedy_bayes(dataset: DataFrame, epsilon, degree=None, retains=None):
 
     # mapping from column name to is_binary, because sensitivity is different
     # for binary or non-binary column
-    binaries = [col for col in dataset if dataset[col].unique().size > 2]
+    binaries = [col for col in dataset if dataset[col].unique().size <= 2]
     more_retains = False
     if len(retains) == 0:
         root_col = np.random.choice(dataset.columns)
