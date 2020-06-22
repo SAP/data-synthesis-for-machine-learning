@@ -181,7 +181,8 @@ def sampling_pair(mis, aps, binaries, n_rows, n_cols, epsilon):
 
 def noisy_distributions(dataset, columns, epsilon):
     """
-    Calculate differentially private distribution
+    Generate differentially private distribution by adding Laplace noise
+    Algorithm 1 Page 9: parameters (scale, size) of Laplace distribution
     """
     data = dataset.copy()[columns]
     data['freq'] = 1
@@ -190,18 +191,16 @@ def noisy_distributions(dataset, columns, epsilon):
 
     iters = [range(int(dataset[col].max()) + 1) for col in columns]
     domain = DataFrame(columns=columns, data=list(product(*iters)))
+    # freq: the complete probability distribution
     freq = merge(domain, freq, how='left')
     freq.fillna(0, inplace=True)
 
     n_rows, n_cols = dataset.shape
-    scale = 2 * n_cols / (n_rows * epsilon)
-    # if all noisy distributions are zero, add noises again
-    while True:
+    scale = 2 * (n_cols - (len(columns) - 1)) / (n_rows * epsilon)
+    if epsilon:
         noises = np.random.laplace(0, scale=scale, size=freq.shape[0])
         freq['freq'] += noises
         freq.loc[freq['freq'] < 0, 'freq'] = 0
-        if freq['freq'].sum() > 0:
-            break
     return freq
 
 
