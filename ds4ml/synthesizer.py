@@ -113,7 +113,7 @@ def greedy_bayes(dataset: DataFrame, epsilon, degree=None, retains=None):
 
     # mapping from column name to is_binary, because sensitivity is different
     # for binary or non-binary column
-    binaries = [col for col in dataset if dataset[col].unique().size > 2]
+    binaries = [col for col in dataset if dataset[col].unique().size <= 2]
     more_retains = False
     if len(retains) == 0:
         root_col = np.random.choice(dataset.columns)
@@ -181,7 +181,8 @@ def sampling_pair(mis, aps, binaries, n_rows, n_cols, epsilon):
 
 def noisy_distributions(dataset, columns, epsilon):
     """
-    Calculate differentially private distribution
+    Generate differentially private distribution by adding Laplace noise
+    Algorithm 1 Page 9: parameters (scale, size) of Laplace distribution
     """
     data = dataset.copy()[columns]
     data['freq'] = 1
@@ -190,37 +191,44 @@ def noisy_distributions(dataset, columns, epsilon):
 
     iters = [range(int(dataset[col].max()) + 1) for col in columns]
     domain = DataFrame(columns=columns, data=list(product(*iters)))
+    # freq: the complete probability distribution
     freq = merge(domain, freq, how='left')
     freq.fillna(0, inplace=True)
 
     n_rows, n_cols = dataset.shape
-    scale = 2 * n_cols / (n_rows * epsilon)
-    # if all noisy distributions are zero, add noises again
-    while True:
+    scale = 2 * (n_cols - (len(columns) - 1)) / (n_rows * epsilon)
+    if epsilon:
         noises = np.random.laplace(0, scale=scale, size=freq.shape[0])
         freq['freq'] += noises
         freq.loc[freq['freq'] < 0, 'freq'] = 0
-        if freq['freq'].sum() > 0:
-            break
     return freq
 
 
 def noisy_conditionals(network, dataset, epsilon):
     """
-    Algorithm 3, Page 20: noisy conditional distribution probability
+    Algorithm 1, Page 9: noisy conditional distribution probability
     """
     cond_prs = {}  # conditional probability distributions
 
     # distribution of one or more root node(s) in bayesian network
-    for col in network[0][1]:
-        freq = noisy_distributions(dataset, [col], epsilon)
-        prs = freq[[col, 'freq']].groupby(col).sum()['freq']
-        cond_prs[col] = normalize_distribution(prs).tolist()
+    root = network[0][1][0]
+    # attributes [1, k]
+    kattr = [root]
+    for child, _ in network[:len(network[-1][1])]:
+        kattr.append(child)
+
+    kfreq = noisy_distributions(dataset, kattr, epsilon)
+    root_prs = kfreq[[root, 'freq']].groupby(root).sum()['freq']
+    cond_prs[root] = normalize_distribution(root_prs).tolist()
 
     # distributions of other child node(s) in bayesian network
+    net_idx = 0
     for child, parents in network:
         cond_prs[child] = {}
-        freq = noisy_distributions(dataset, parents + [child], epsilon)
+        if net_idx < len(network[-1][1]):
+            freq = kfreq.copy().loc[:, parents + [child, 'freq']]
+        else:
+            freq = noisy_distributions(dataset, parents + [child], epsilon)
         freq = DataFrame(freq[parents + [child, 'freq']]
                          .groupby(parents + [child]).sum())
         if len(parents) == 1:
@@ -231,4 +239,5 @@ def noisy_conditionals(network, dataset, epsilon):
             for parent in product(*freq.index.levels[:-1]):
                 prs = normalize_distribution(freq.loc[parent]['freq']).tolist()
                 cond_prs[child][str(list(parent))] = prs
+        net_idx = net_idx + 1
     return cond_prs
