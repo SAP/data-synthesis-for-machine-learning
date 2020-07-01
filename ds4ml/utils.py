@@ -11,6 +11,7 @@ import csv
 import logging
 import numpy as np
 import os
+import hashlib
 
 from string import ascii_lowercase
 from pandas import Series, DataFrame
@@ -56,8 +57,8 @@ def read_data_from_csv(path, na_values=None, header=None, sep=","):
         df = read_csv(path, skipinitialspace=True, na_values=na_values,
                       header=header, sep=sep)
     except (UnicodeDecodeError, NameError):
-        header = header or ('infer' if has_header(path, encoding='latin1', sep=sep)
-                            else None)
+        header = header or ('infer' if has_header(path, encoding='latin1',
+                                                  sep=sep) else None)
         df = read_csv(path, skipinitialspace=True, na_values=na_values,
                       header=header, encoding='latin1', sep=sep)
 
@@ -438,8 +439,8 @@ def randomize_string(length):
 
 
 def pseudonymise_string(value):
-    chars = 'oVT0X5Is#94OpnDifAkRGaUP3KcNYhjzd8CWmQurybBgqMZH7FL2tJe$vxEw1Sl6'
-    return ''.join(map(lambda a: chars[ord(a) & 63], list(value)))
+    """ pseudonymise a string by RIPEMD-160 hashes """
+    return hashlib.new('ripemd160', str(value).encode('utf-8')).hexdigest()
 
 
 # ---------------------------------------------------------------
