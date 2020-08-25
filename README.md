@@ -105,11 +105,4 @@ There are one demo dataset (part of the public dataset from [Adult](https://arch
 If you encounter an issue, you can open an issue in GitHub
 
 ## Contribute
-Please check our [Contribution Guidelines](https://github.com/SAP/data-synthesis-for-machine-learning/blob/master/CONTRIBUTING.md)
-
-## License
-Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v.2 except as noted otherwise in the [LICENSE file](https://github.com/SAP/data-synthesis-for-machine-learning/blob/master/LICENSE).
-
-
-
-
+Please check our [Contribution Guidelines](/CONTRIBUTING.md)
