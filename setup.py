@@ -13,10 +13,37 @@ INSTALL_REQUIRES = [
     'setuptools >= 39.1.0'
 ]
 
+LONG_DESCRIPTION = """
+The recent enforcement of data privacy protection regulations, such as GDPR,
+has made data sharing more difficult. This tool intends to facilitate data
+sharing from a customer by synthesizing a dataset based on the original dataset
+for later machine learning.
+
+There are two parts to this tool:
++ Data synthesizer
+  Synthesize a dataset based on the original dataset. It accepts CSV data as
+  input, and output a synthesized dataset based on Differential Privacy. The
+  algorithm in the data synthesizer reference to the paper - [PrivBayes 2017]
+  (http://dimacs.rutgers.edu/~graham/pubs/papers/privbayes-tods.pdf).
++ Data utility evaluation
+  Evaluate the data utility for the synthesized dataset. The original dataset
+  and the synthesized dataset as the input, one utility evaluation report will
+  be generated with several indicators.
+"""
+URL = "https://github.com/SAP/data-synthesis-for-machine-learning"
+PROJECT_URLS = {
+    "Bug Tracker": "https://github.com/SAP/data-synthesis-for-machine-learning/issues",
+    "Documentation": "https://github.com/SAP/data-synthesis-for-machine-learning",
+    "Source Code": "https://github.com/SAP/data-synthesis-for-machine-learning",
+}
+
 
 def main():
     setup(name='ds4ml',
           description='A python library for data synthesis and evaluation',
+          long_description=LONG_DESCRIPTION,
+          project_urls=PROJECT_URLS,
+          url=URL,
           version='0.1.0',
           packages=['ds4ml', 'ds4ml.command'],
           package_data={
