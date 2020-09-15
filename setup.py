@@ -20,12 +20,13 @@ sharing from a customer by synthesizing a dataset based on the original dataset
 for later machine learning.
 
 There are two parts to this tool:
-+ Data synthesizer
+
+- Data synthesizer
   Synthesize a dataset based on the original dataset. It accepts CSV data as
   input, and output a synthesized dataset based on Differential Privacy. The
-  algorithm in the data synthesizer reference to the paper - [PrivBayes 2017]
-  (http://dimacs.rutgers.edu/~graham/pubs/papers/privbayes-tods.pdf).
-+ Data utility evaluation
+  algorithm in the data synthesizer reference to the paper (
+  http://dimacs.rutgers.edu/~graham/pubs/papers/privbayes-tods.pdf).
+- Data utility evaluation
   Evaluate the data utility for the synthesized dataset. The original dataset
   and the synthesized dataset as the input, one utility evaluation report will
   be generated with several indicators.
@@ -42,6 +43,7 @@ def main():
     setup(name='ds4ml',
           description='A python library for data synthesis and evaluation',
           long_description=LONG_DESCRIPTION,
+          long_description_content_type='text/markdown',
           project_urls=PROJECT_URLS,
           url=URL,
           version='0.1.0',
@@ -55,8 +57,8 @@ def main():
                   'data-evaluate = ds4ml.command.evaluate:main'
               ]
           },
-          author=['Rongjun', 'Yan', 'David'],
-          author_email=['rongjun.gao@sap.com', 'yan.zhao01@sap.com', 'd.xia@sap.com'],
+          maintainer="Yan Zhao",
+          maintainer_email="yan.zhao01@sap.com",
           install_requires=INSTALL_REQUIRES,
           platform='any')
 
