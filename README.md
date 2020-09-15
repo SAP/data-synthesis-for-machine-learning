@@ -61,7 +61,8 @@ There are one demo dataset (part of the public dataset from [Adult](https://arch
     --no-header          indicate there is no header in a CSV file, and will
                         take [#0, #1, #2, ...] as header. (default: the tool
                         will try to detect and take actions)
-    --records INT       specify the records you want to generate; default is the same records                         with the original dataset
+    --records INT       specify the records you want to generate; default is the
+                        same records with the original dataset
     --sep String        specify the delimiter of the input file
 
   advanced arguments:

@@ -17,7 +17,7 @@ INSTALL_REQUIRES = [
 def main():
     setup(name='ds4ml',
           description='A python library for data synthesis and evaluation',
-          version='0.0.1',
+          version='0.1.0',
           packages=['ds4ml', 'ds4ml.command'],
           package_data={
               '': ['template/*.html']
