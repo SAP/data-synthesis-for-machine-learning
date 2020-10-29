@@ -94,20 +94,20 @@ def test_set_domain_for_datetime_attribute():
 def test_counts_numerical_attribute():
     ints = random.randint(1, 100, size)
     attr = Attribute(Series(ints, name='Integer'))
-    counts = attr.counts()
+    counts = attr.counts(normalize=False)
     assert sum(counts) == 30
     assert len(counts) == 20
-    counts = attr.counts(bins=[0, 10, 20, 30, 100])
+    counts = attr.counts(bins=[0, 10, 20, 30, 100], normalize=False)
     assert sum(counts) == 30
     assert len(counts) == 4
 
     # categorical ints
     attr = Attribute(Series([1, 10, 11, 10, 20, 15, 16, 25], name='Integer'),
                      categorical=True)
-    counts = attr.counts()
+    counts = attr.counts(normalize=False)
     assert sum(counts) == 8
     assert len(counts) == 7
-    counts = attr.counts(bins=[5, 10, 15])
+    counts = attr.counts(bins=[5, 10, 15], normalize=False)
     assert sum(counts) == 3
     assert len(counts) == 3
 
@@ -123,11 +123,11 @@ def test_counts_datetimes():
              '11/12/2000', '01/02/2001', '01/02/2001', '12/03/2001',
              '07/09/2002', '10/22/2002']
     attr = Attribute(Series(dates, name='DateTime'), categorical=True)
-    counts = attr.counts()
+    counts = attr.counts(normalize=False)
     assert sum(counts) == len(dates)
     assert array_equal(counts, [1, 1, 2, 1, 2, 1, 1, 1])
 
-    counts = attr.counts(bins=['12/03/2001', '10/22/2002'])
+    counts = attr.counts(bins=['12/03/2001', '10/22/2002'], normalize=False)
     assert array_equal(counts, [1, 1])
 
 

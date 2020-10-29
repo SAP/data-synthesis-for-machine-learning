@@ -200,9 +200,9 @@ class Attribute(Series):
                 self._min = int(self._min)
                 self._max = int(self._max)
 
-    def counts(self, bins=None):
+    def counts(self, bins=None, normalize=True):
         """
-        Return an array containing counts of unique values.
+        Return an array of counts (or normalized density) of unique values.
 
         This function works with `attribute.bins`. Combination of both are
         like `Series.value_counts`. The parameter `bins` can be none, or a list.
@@ -215,12 +215,19 @@ class Attribute(Series):
             counts = self.value_counts()
             for value in set(bins) - set(counts.index):
                 counts[value] = 0
-            return np.array([counts.get(b) for b in bins])
+            if normalize:
+                return np.array([round(counts.get(b)/sum(counts), 2)
+                                 for b in bins])
+            else:
+                return np.array([counts.get(b) for b in bins])
         else:
             if len(bins) == 1:
                 return np.array([self.size])
             hist, _ = np.histogram(self, bins=bins)
-            return hist
+            if normalize:
+                return (hist / hist.sum()).round(2)
+            else:
+                return hist
 
     def bin_indexes(self):
         """
