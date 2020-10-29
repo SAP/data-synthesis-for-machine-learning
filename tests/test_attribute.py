@@ -112,6 +112,12 @@ def test_counts_numerical_attribute():
     assert len(counts) == 3
 
 
+def test_decimals_float_attribute():
+    floats = map(lambda v: round(v, 2), random.uniform(1, 10, size))
+    attr = Attribute(Series(floats, name='Float'))
+    assert attr.decimals() == 2
+
+
 def test_counts_datetimes():
     dates = ['05/29/1988', '06/22/1988', '07/30/1992', '07/30/1992',
              '11/12/2000', '01/02/2001', '01/02/2001', '12/03/2001',

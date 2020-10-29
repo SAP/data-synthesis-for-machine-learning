@@ -55,12 +55,13 @@ def read_data_from_csv(path, na_values=None, header=None, sep=","):
     try:
         header = header or ('infer' if has_header(path, sep=sep) else None)
         df = read_csv(path, skipinitialspace=True, na_values=na_values,
-                      header=header, sep=sep)
+                      header=header, sep=sep, float_precision='high')
     except (UnicodeDecodeError, NameError):
         header = header or ('infer' if has_header(path, encoding='latin1',
                                                   sep=sep) else None)
         df = read_csv(path, skipinitialspace=True, na_values=na_values,
-                      header=header, encoding='latin1', sep=sep)
+                      header=header, encoding='latin1', sep=sep,
+                      float_precision='high')
 
     # Remove columns with empty active domain, i.e., all values are missing.
     before_attrs = set(df.columns)
