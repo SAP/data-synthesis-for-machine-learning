@@ -38,6 +38,8 @@ def main():
                             'is "report.html" under current work directory)')
 
     group = parser.add_argument_group('advanced arguments')
+    group.add_argument('--category', metavar='LIST',
+                       help='set categorical columns separated by a comma.')
     group.add_argument('-t', '--test',
                        help='set test dataset for classification or regression '
                             'task; (default take 20%% from source dataset)')
@@ -51,6 +53,7 @@ def main():
 
     na_values = str_to_list(args.na_values)
     class_labels = str_to_list(args.class_label)
+    categories = str_to_list(args.category)
 
     # check kinds of parameters
     args.output = os.path.join(os.getcwd(), args.output)
@@ -73,7 +76,7 @@ def main():
     if comp:
         parser.exit(message=f'--class-label(s): {comp} are not in target file.')
 
-    frame = BiFrame(source, target)
+    frame = BiFrame(source, target, categories=categories)
     frame.to_html(buf=args.output, title='Data Utility Evaluation Report',
                   labels=class_labels, test=test)
 

@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class BiFrame(object):
-    def __init__(self, first: pd.DataFrame, second: pd.DataFrame):
+    def __init__(self, first: pd.DataFrame, second: pd.DataFrame,
+                 categories=None):
         """
         BiFrame class that contains two data sets, which currently provides
         kinds of analysis methods from distribution, correlation, and some
@@ -33,6 +34,9 @@ class BiFrame(object):
 
         second : {pandas.DataFrame}
             second data set, i.e. synthesized ata
+
+        categories : list of columns
+            Column names whose values are categorical.
         """
         # distribution
         self._dt = {}
@@ -44,8 +48,8 @@ class BiFrame(object):
             logger.info(f"BiFrame constructed on attributes: {common}.")
 
         # left and right data set (ds)
-        self.first = DataSet(first[common])
-        self.second = DataSet(second[common])
+        self.first = DataSet(first[common], categories=categories)
+        self.second = DataSet(second[common], categories=categories)
         self._columns = self.first.columns.sort_values().to_list()
 
         # Make sure that two dataset have same domain for categorical
@@ -81,7 +85,7 @@ class BiFrame(object):
 
     def jsd(self):
         """
-        Return pairwise JSD (Jensen-Shannon divergence) of columns'distribution.
+        Return pairwise JSD (Jensen-Shannon divergence) of columns' distribution.
         """
         df = pd.DataFrame(columns=self._columns, index=['jsd'])
         df.fillna(0)
@@ -163,8 +167,8 @@ class BiFrame(object):
         """
         if (not self.first[label].categorical or
                 not self.second[label].categorical):
-            raise ValueError(
-                f'Classifier can\'t run on non-categorical column: {label}')
+            raise ValueError(f'Classifier can not run on non-categorical '
+                             f'column: {label}')
         from sklearn.metrics import confusion_matrix
 
         def split_feature_label(df: pd.DataFrame):
@@ -177,12 +181,13 @@ class BiFrame(object):
                 # For one class, there are two sorted values.
                 # e.g. ['Yes', 'No'] => [[0, 1],
                 #                        [1, 0]]
-                # Here it should choose second column to represent this attribute.
+                # Choose second column to represent this attribute.
                 label_ = sub_cols[1]
                 return df.drop(sub_cols, axis=1), df[label_]
             else:
                 try:
-                    # merge multiple column into one: [Name_A, Name_B, ..] => Name
+                    # merge multiple columns into one column:
+                    # [Name_A, Name_B, ..] => Name
                     _y = df[sub_cols].apply(lambda x: Index(x).get_loc(1),
                                             axis=1)
                     return df.drop(sub_cols, axis=1), _y
