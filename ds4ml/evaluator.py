@@ -30,10 +30,10 @@ class BiFrame(object):
         Parameters
         ----------
         first : {pandas.DataFrame}
-            first data set
+            first data set (i.e. original dataset)
 
         second : {pandas.DataFrame}
-            second data set, i.e. synthesized ata
+            second data set (i.e. synthesized dataset)
 
         categories : list of columns
             Column names whose values are categorical.
@@ -196,36 +196,43 @@ class BiFrame(object):
                     print(sub_cols)
                     print(df[sub_cols])
 
-        # If test dataset is not provided, then split 20% of source dataset for testing.
+        # If test dataset is not provided, then split 20% of original dataset
+        # for testing.
         if test is None:
-            lt, test = train_test_split(self.first, test_size=0.2)
-            rt, _ = train_test_split(self.second, test_size=0.2)
+            fst_train, test = train_test_split(self.first, test_size=0.2)
+            snd_train, _ = train_test_split(self.second, test_size=0.2)
         else:
-            lt = self.first
-            rt = self.second
-        ts = self.first.encode(data=lt)
-        lt_x, lt_y = split_feature_label(ts)
+            fst_train = self.first
+            snd_train = self.second
+        # ts = self.first.encode(data=fst_train)
+        fst_train_x, fst_train_y = split_feature_label(
+                                            self.first.encode(data=fst_train))
         test_x, test_y = split_feature_label(self.first.encode(data=test))
-        rt_x, rt_y = split_feature_label(self.first.encode(data=rt))
+        snd_train_x, snd_train_y = split_feature_label(
+                                            self.first.encode(data=snd_train))
 
         # construct svm classifier, and predict
-        lt_yp = train_and_predict(lt_x, lt_y, test_x)
-        rt_yp = train_and_predict(rt_x, rt_y, test_x)
+        fst_predict_y = train_and_predict(fst_train_x, fst_train_y, test_x)
+        snd_predict_y = train_and_predict(snd_train_x, snd_train_y, test_x)
 
         columns = self.first[label].bins
         labels = range(len(columns))
-        # If test dataset has class label, return two expected score.
+        # If test dataset has the columns as class label for prediction, return
+        # two expected scores: (self.first) original dataset's and (self.second)
+        # anonymized dataset's confusion matrix.
         if label in test:
-            lcm = confusion_matrix(test_y, lt_yp, labels=labels)
-            rcm = confusion_matrix(test_y, rt_yp, labels=labels)
-            # lcm = lcm.astype('float') / lcm.sum(axis=1)
-            # rcm = rcm.astype('float') / rcm.sum(axis=1)
-            return (pd.DataFrame(lcm, columns=columns, index=columns),
-                    pd.DataFrame(rcm, columns=columns, index=columns))
-        # If test dataset don't have class label, return their expected values.
+            fst_matrix = confusion_matrix(test_y, fst_predict_y, labels=labels)
+            snd_matrix = confusion_matrix(test_y, snd_predict_y, labels=labels)
+            # fst_matrix = fst_matrix.astype('float') / fst_matrix.sum(axis=1)
+            # snd_matrix = snd_matrix.astype('float') / snd_matrix.sum(axis=1)
+            return (pd.DataFrame(fst_matrix, columns=columns, index=columns),
+                    pd.DataFrame(snd_matrix, columns=columns, index=columns))
+        # If test dataset does not have the class label for prediction, return
+        # their predicted values.
         else:
-            cm = confusion_matrix(lt_yp, rt_yp, labels=labels)
-            return pd.DataFrame(cm, columns=columns, index=columns)
+            matrix = confusion_matrix(fst_predict_y, snd_predict_y,
+                                      labels=labels)
+            return pd.DataFrame(matrix, columns=columns, index=columns)
 
     def to_html(self, buf=None, title='Evaluation Report', info=True,
                 distribute=True, correlate=True, classifier=None, labels=None,
