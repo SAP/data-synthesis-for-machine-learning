@@ -33,9 +33,9 @@ There are two parts to this tool:
 """
 URL = "https://github.com/SAP/data-synthesis-for-machine-learning"
 PROJECT_URLS = {
-    "Bug Tracker": "https://github.com/SAP/data-synthesis-for-machine-learning/issues",
-    "Documentation": "https://github.com/SAP/data-synthesis-for-machine-learning",
-    "Source Code": "https://github.com/SAP/data-synthesis-for-machine-learning",
+    "Bug Tracker": URL + "/issues",
+    "Documentation": URL,
+    "Source Code": URL,
 }
 
 
@@ -46,7 +46,7 @@ def main():
           long_description_content_type='text/markdown',
           project_urls=PROJECT_URLS,
           url=URL,
-          version='0.1.1',
+          version='0.1.2',
           packages=['ds4ml', 'ds4ml.command'],
           package_data={
               '': ['template/*.html']
