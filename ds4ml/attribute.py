@@ -64,6 +64,9 @@ class Attribute(Series):
         if self.atype == 'datetime':
             self.update(self.map(self._to_seconds).map(self._date_formatter))
 
+        if self.atype == 'float':
+            self._decimals = self.decimals()
+
         # how to define the attribute is categorical.
         self.categorical = categorical or (
                 self.atype == 'string' and not self.is_unique)
@@ -197,9 +200,9 @@ class Attribute(Series):
                 self._min = int(self._min)
                 self._max = int(self._max)
 
-    def counts(self, bins=None):
+    def counts(self, bins=None, normalize=True):
         """
-        Return an array containing counts of unique values.
+        Return an array of counts (or normalized density) of unique values.
 
         This function works with `attribute.bins`. Combination of both are
         like `Series.value_counts`. The parameter `bins` can be none, or a list.
@@ -212,12 +215,19 @@ class Attribute(Series):
             counts = self.value_counts()
             for value in set(bins) - set(counts.index):
                 counts[value] = 0
-            return np.array([counts.get(b) for b in bins])
+            if normalize:
+                return np.array([round(counts.get(b)/sum(counts) * 100, 2)
+                                 for b in bins])
+            else:
+                return np.array([counts.get(b) for b in bins])
         else:
             if len(bins) == 1:
                 return np.array([self.size])
             hist, _ = np.histogram(self, bins=bins)
-            return hist
+            if normalize:
+                return (hist / hist.sum() * 100).round(2)
+            else:
+                return hist
 
     def bin_indexes(self):
         """
@@ -247,6 +257,22 @@ class Attribute(Series):
             'bins': self.bins.tolist(),
             'prs': self.prs.tolist()
         }
+
+    def decimals(self):
+        """
+        Returns number of decimals places for floating attribute.
+        """
+        def decimals_of(value: float):
+            value = str(value)
+            return len(value) - value.rindex('.') - 1
+
+        vc = self.map(decimals_of).value_counts()
+        slot = 0
+        for i in range(len(vc)):
+            if sum(vc.head(i + 1)) / sum(vc) > 0.8:
+                slot = i + 1
+                break
+        return max(vc.index[:slot])
 
     def pseudonymize(self):
         """
@@ -321,6 +347,8 @@ class Attribute(Series):
         if self.atype == 'datetime':
             if not self.categorical:
                 column = column.map(self._date_formatter)
+        elif self.atype == 'float':
+            column = column.round(self._decimals)
         elif self.atype == 'integer':
             column = column.round().astype(int)
         elif self.atype == 'string':
@@ -357,5 +385,5 @@ class Attribute(Series):
                               int((v - self._min) / (self._step + 1e-8))
                               / self._bins)
         else:
-            raise ValueError('Non-categorical attribute does not support encode '
+            raise ValueError('Non-categorical attribute does not need encode '
                              'method.')

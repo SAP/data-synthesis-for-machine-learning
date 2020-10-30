@@ -14,10 +14,9 @@ def pairwise_mutual_information(frame: pd.DataFrame):
     mi = pd.DataFrame(columns=columns, index=columns, dtype=float)
     for row in columns:
         for col in columns:
-            if pd.isnull(mi.at[row, col]):
-                mi.at[row, col] = normalized_mutual_info_score(
-                    frame[row].astype(str), frame[col].astype(str),
-                    average_method='arithmetic')
+            if pd.isnull(mi.at[col, row]):
+                mi.at[row, col] = normalized_mutual_info_score(frame[row],
+                                                               frame[col])
             else:
                 mi.at[row, col] = mi.at[col, row]
     return mi.round(3)

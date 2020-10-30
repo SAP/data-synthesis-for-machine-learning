@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class BiFrame(object):
-    def __init__(self, first: pd.DataFrame, second: pd.DataFrame):
+    def __init__(self, first: pd.DataFrame, second: pd.DataFrame,
+                 categories=None):
         """
         BiFrame class that contains two data sets, which currently provides
         kinds of analysis methods from distribution, correlation, and some
@@ -29,10 +30,13 @@ class BiFrame(object):
         Parameters
         ----------
         first : {pandas.DataFrame}
-            first data set
+            first data set (i.e. original dataset)
 
         second : {pandas.DataFrame}
-            second data set, i.e. synthesized ata
+            second data set (i.e. synthesized dataset)
+
+        categories : list of columns
+            Column names whose values are categorical.
         """
         # distribution
         self._dt = {}
@@ -44,8 +48,8 @@ class BiFrame(object):
             logger.info(f"BiFrame constructed on attributes: {common}.")
 
         # left and right data set (ds)
-        self.first = DataSet(first[common])
-        self.second = DataSet(second[common])
+        self.first = DataSet(first[common], categories=categories)
+        self.second = DataSet(second[common], categories=categories)
         self._columns = self.first.columns.sort_values().to_list()
 
         # Make sure that two dataset have same domain for categorical
@@ -81,7 +85,7 @@ class BiFrame(object):
 
     def jsd(self):
         """
-        Return pairwise JSD (Jensen-Shannon divergence) of columns'distribution.
+        Return pairwise JSD (Jensen-Shannon divergence) of columns' distribution.
         """
         df = pd.DataFrame(columns=self._columns, index=['jsd'])
         df.fillna(0)
@@ -163,8 +167,8 @@ class BiFrame(object):
         """
         if (not self.first[label].categorical or
                 not self.second[label].categorical):
-            raise ValueError(
-                f'Classifier can\'t run on non-categorical column: {label}')
+            raise ValueError(f'Classifier can not run on non-categorical '
+                             f'column: {label}')
         from sklearn.metrics import confusion_matrix
 
         def split_feature_label(df: pd.DataFrame):
@@ -177,12 +181,13 @@ class BiFrame(object):
                 # For one class, there are two sorted values.
                 # e.g. ['Yes', 'No'] => [[0, 1],
                 #                        [1, 0]]
-                # Here it should choose second column to represent this attribute.
+                # Choose second column to represent this attribute.
                 label_ = sub_cols[1]
                 return df.drop(sub_cols, axis=1), df[label_]
             else:
                 try:
-                    # merge multiple column into one: [Name_A, Name_B, ..] => Name
+                    # merge multiple columns into one column:
+                    # [Name_A, Name_B, ..] => Name
                     _y = df[sub_cols].apply(lambda x: Index(x).get_loc(1),
                                             axis=1)
                     return df.drop(sub_cols, axis=1), _y
@@ -191,36 +196,44 @@ class BiFrame(object):
                     print(sub_cols)
                     print(df[sub_cols])
 
-        # If test dataset is not provided, then split 20% of source dataset for testing.
+        # If test dataset is not provided, then split 20% of original dataset
+        # for testing.
         if test is None:
-            lt, test = train_test_split(self.first, test_size=0.2)
-            rt, _ = train_test_split(self.second, test_size=0.2)
+            fst_train, test = train_test_split(self.first, test_size=0.2)
+            snd_train, _ = train_test_split(self.second, test_size=0.2)
         else:
-            lt = self.first
-            rt = self.second
-        ts = self.first.encode(data=lt)
-        lt_x, lt_y = split_feature_label(ts)
+            fst_train = self.first
+            snd_train = self.second
+        # ts = self.first.encode(data=fst_train)
+        fst_train_x, fst_train_y = split_feature_label(
+                                            self.first.encode(data=fst_train))
         test_x, test_y = split_feature_label(self.first.encode(data=test))
-        rt_x, rt_y = split_feature_label(self.first.encode(data=rt))
+        snd_train_x, snd_train_y = split_feature_label(
+                                            self.first.encode(data=snd_train))
 
-        # construct svm classifier, and predict
-        lt_yp = train_and_predict(lt_x, lt_y, test_x)
-        rt_yp = train_and_predict(rt_x, rt_y, test_x)
+        # construct svm classifier, and predict on the same test dataset
+        fst_predict_y = train_and_predict(fst_train_x, fst_train_y, test_x)
+        snd_predict_y = train_and_predict(snd_train_x, snd_train_y, test_x)
 
         columns = self.first[label].bins
         labels = range(len(columns))
-        # If test dataset has class label, return two expected score.
+        # If test dataset has the columns as class label for prediction, return
+        # two expected scores: (self.first) original dataset's and (self.second)
+        # anonymized dataset's confusion matrix.
         if label in test:
-            lcm = confusion_matrix(test_y, lt_yp, labels=labels)
-            rcm = confusion_matrix(test_y, rt_yp, labels=labels)
-            # lcm = lcm.astype('float') / lcm.sum(axis=1)
-            # rcm = rcm.astype('float') / rcm.sum(axis=1)
-            return (pd.DataFrame(lcm, columns=columns, index=columns),
-                    pd.DataFrame(rcm, columns=columns, index=columns))
-        # If test dataset don't have class label, return their expected values.
+            fst_matrix = confusion_matrix(test_y, fst_predict_y, labels=labels)
+            snd_matrix = confusion_matrix(test_y, snd_predict_y, labels=labels)
+            # normalize the confusion matrix
+            # fst_matrix = fst_matrix.astype('float') / fst_matrix.sum(axis=1)
+            # snd_matrix = snd_matrix.astype('float') / snd_matrix.sum(axis=1)
+            return (pd.DataFrame(fst_matrix, columns=columns, index=columns),
+                    pd.DataFrame(snd_matrix, columns=columns, index=columns))
+        # If test dataset does not have the class label for prediction, return
+        # their predicted values.
         else:
-            cm = confusion_matrix(lt_yp, rt_yp, labels=labels)
-            return pd.DataFrame(cm, columns=columns, index=columns)
+            matrix = confusion_matrix(fst_predict_y, snd_predict_y,
+                                      labels=labels)
+            return pd.DataFrame(matrix, columns=columns, index=columns)
 
     def to_html(self, buf=None, title='Evaluation Report', info=True,
                 distribute=True, correlate=True, classifier=None, labels=None,
@@ -282,6 +295,7 @@ class BiFrame(object):
                 svg = plot_histogram(bins, counts)
                 content['dist'].append({'name': col, 'columns': bins,
                                         'data': counts, 'path': svg})
+
         if correlate:
             topics.append('corr')
             content['corr'] = []
