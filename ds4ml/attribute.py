@@ -216,7 +216,7 @@ class Attribute(Series):
             for value in set(bins) - set(counts.index):
                 counts[value] = 0
             if normalize:
-                return np.array([round(counts.get(b)/sum(counts), 2)
+                return np.array([round(counts.get(b)/sum(counts) * 100, 2)
                                  for b in bins])
             else:
                 return np.array([counts.get(b) for b in bins])
@@ -225,7 +225,7 @@ class Attribute(Series):
                 return np.array([self.size])
             hist, _ = np.histogram(self, bins=bins)
             if normalize:
-                return (hist / hist.sum()).round(2)
+                return (hist / hist.sum() * 100).round(2)
             else:
                 return hist
 
