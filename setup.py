@@ -46,7 +46,7 @@ def main():
           long_description_content_type='text/markdown',
           project_urls=PROJECT_URLS,
           url=URL,
-          version='0.1.0',
+          version='0.1.1',
           packages=['ds4ml', 'ds4ml.command'],
           package_data={
               '': ['template/*.html']
