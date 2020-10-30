@@ -168,7 +168,7 @@ def plot_confusion_matrix(matrix: DataFrame, title='',
         manually set range of matrix
     """
     import matplotlib.pyplot as plt
-    _prepare_for_cjk_characters(''.join(matrix.columns))
+    _prepare_for_cjk_characters(''.join(map(str, matrix.columns)))
     figsize = (6.4, 4.8)
     n_columns = matrix.columns.size
     if n_columns > 9:

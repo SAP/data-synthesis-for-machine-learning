@@ -57,18 +57,21 @@ class DataSet(DataFrame):
         # If the data to encode is None, then transform source data _data;
         frame = DataFrame()
         for col, attr in self.items():
-            # TODO: Only focus on Bayesian Network nodes ??
             if data is not None and col not in data:
                 continue
-            if attr.atype == 'string' and attr.categorical:
+            if attr.categorical:
                 subs = attr.encode(None if data is None else data[col])
                 for label in attr.bins:
-                    frame[col + self.separator + label] = subs[label]
-            elif attr.atype != 'string':
+                    frame[col + self.separator + str(label)] = subs[label]
+            else:
                 frame[col] = attr.encode(None if data is None else data[col])
         return frame
 
     def _sampling_dataset(self, network, cond_prs, n):
+        """
+        Returns a sampling dataset (n rows) based on bayesian network and
+        conditional probability.
+        """
         from numpy import random
         root_col = network[0][1][0]
         root_prs = cond_prs[root_col]

@@ -211,7 +211,7 @@ class BiFrame(object):
         snd_train_x, snd_train_y = split_feature_label(
                                             self.first.encode(data=snd_train))
 
-        # construct svm classifier, and predict
+        # construct svm classifier, and predict on the same test dataset
         fst_predict_y = train_and_predict(fst_train_x, fst_train_y, test_x)
         snd_predict_y = train_and_predict(snd_train_x, snd_train_y, test_x)
 
@@ -223,6 +223,7 @@ class BiFrame(object):
         if label in test:
             fst_matrix = confusion_matrix(test_y, fst_predict_y, labels=labels)
             snd_matrix = confusion_matrix(test_y, snd_predict_y, labels=labels)
+            # normalize the confusion matrix
             # fst_matrix = fst_matrix.astype('float') / fst_matrix.sum(axis=1)
             # snd_matrix = snd_matrix.astype('float') / snd_matrix.sum(axis=1)
             return (pd.DataFrame(fst_matrix, columns=columns, index=columns),
@@ -294,6 +295,7 @@ class BiFrame(object):
                 svg = plot_histogram(bins, counts)
                 content['dist'].append({'name': col, 'columns': bins,
                                         'data': counts, 'path': svg})
+
         if correlate:
             topics.append('corr')
             content['corr'] = []
