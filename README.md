@@ -45,20 +45,20 @@ There are one demo dataset (part of the public dataset from [Adult](https://arch
   Synthesize one dataset by Differential Privacy
 
   positional arguments:
-    file                 set path of the CSV to be synthesized
+    file                set path of the CSV to be synthesized
 
   general arguments:
-    -h, --help           show this help message and exit
-    --pseudonym LIST     set candidate columns separated by a comma, which will
+    -h, --help          show this help message and exit
+    --pseudonym LIST    set candidate columns separated by a comma, which will
                         be replaced with a pseudonym. It only works on the
                         string column.
-    --delete LIST        set columns separated by a comma, which will be deleted
+    --delete LIST       set columns separated by a comma, which will be deleted
                         when synthesis.
-    --na-values LIST     set additional values to recognize as NA/NaN; (default
+    --na-values LIST    set additional values to recognize as NA/NaN; (default
                         null values are from pandas.read_csv)
-    -o, --output FILE    set the file name of output synthesized dataset
+    -o, --output FILE   set the file name of output synthesized dataset
                         (default is input file name with suffix '_a')
-    --no-header          indicate there is no header in a CSV file, and will
+    --no-header         indicate there is no header in a CSV file, and will
                         take [#0, #1, #2, ...] as header. (default: the tool
                         will try to detect and take actions)
     --records INT       specify the records you want to generate; default is the
@@ -97,6 +97,7 @@ There are one demo dataset (part of the public dataset from [Adult](https://arch
   advanced arguments:
     -t, --test TEST     set test dataset for classification or regression task;
                         (default take 20 percent from source dataset)
+    --category LIST     set categorical columns separated by a comma.
     --class-label LIST  set column name as a class label for classification or
                         regression task; supports one or multiple columns
                         (separated by comma)
