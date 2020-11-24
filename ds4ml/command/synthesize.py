@@ -41,8 +41,7 @@ def main():
     group.add_argument('--records', metavar='INT', type=int,
                        help='specify the records you want to generate; default '
                             'is the same records with the original dataset')
-
-    group.add_argument('--sep', metavar='String',
+    group.add_argument('--sep', metavar='STRING',
                        help='specify the delimiter of the input file')
 
     group = parser.add_argument_group('advanced arguments')

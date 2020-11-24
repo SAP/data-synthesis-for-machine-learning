@@ -14,7 +14,7 @@ class DataSet(DataFrame):
     def __init__(self, data=None, index=None, columns=None, dtype=None,
                  copy=False, categories=None):
         """
-        A DataFrame with categories information.
+        An improved DataFrame with categories information.
 
         Parameters
         ----------
@@ -148,7 +148,7 @@ class DataSet(DataFrame):
             if col in deletes:
                 continue
             if col in pseudonyms:
-                frame[col] = attr.pseudonymize()
+                frame[col] = attr.pseudonymize(size=records)
                 continue
             if col in retains:
                 frame[col] = attr

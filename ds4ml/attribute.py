@@ -21,7 +21,8 @@ class Attribute(Series):
     def __init__(self, data, name=None, dtype=None, index=None, copy=False,
                  fastpath=False, categorical=False):
         """
-        A Series with extra information, e.g. categorical.
+        An improved Series with extra information, e.g. categorical,
+        distribution bins.
 
         Parameters
         ----------
@@ -260,7 +261,8 @@ class Attribute(Series):
 
     def decimals(self):
         """
-        Returns number of decimals places for floating attribute.
+        Returns number of decimals places for floating attribute. Used for
+        generated dataset to keep consistent decimal places for float attribute.
         """
         def decimals_of(value: float):
             value = str(value)
@@ -274,27 +276,28 @@ class Attribute(Series):
                 break
         return max(vc.index[:slot])
 
-    def pseudonymize(self):
+    def pseudonymize(self, size=None):
         """
         Return pseudonymized values for this attribute, which is used to
         substitute identifiable data with a reversible, consistent value.
         """
+        size = size or self.size
+        attr = Series(np.random.choice(self.bins, size=size, p=self.prs))
         if self.categorical:
             mapping = {b: utils.pseudonymise_string(b) for b in self.bins}
-            return self.map(lambda x: mapping[x])
+            return attr.map(lambda x: mapping[x])
 
         if self.atype == 'string':
-            return self.map(utils.pseudonymise_string)
+            return attr.map(utils.pseudonymise_string)
         elif self.is_numerical or self.atype == 'datetime':
-            return self.map(str).map(utils.pseudonymise_string)
+            return attr.map(str).map(utils.pseudonymise_string)
 
     def random(self, size=None):
         """
         Return an random array with same length (usually used for
         non-categorical attribute).
         """
-        if size is None:
-            size = len(self)
+        size = size or self.size
         if self._min == self._max:
             rands = np.ones(size) * self._min
         else:
@@ -315,7 +318,8 @@ class Attribute(Series):
             rands = list(map(self._date_formatter, rands))
         return Series(rands)
 
-    def _sampling_bins(self, index: int):
+    def _random_sample_at(self, index: int):
+        """ Sample a value from distribution bins at position 'index'"""
         if self.categorical:
             return self.bins[index]
 
@@ -327,8 +331,9 @@ class Attribute(Series):
 
     def choice(self, size=None, indexes=None):
         """
-        Return a random sample based on this attribute's probability.
-        If indexes and n are both set, ignore n.
+        Return a random sample based on this attribute's probability and
+        distribution bins (default value is base random distribution bins based
+        on its probability).
 
         Parameters
         ----------
@@ -336,14 +341,13 @@ class Attribute(Series):
             size of random sample
 
         indexes : array-like
-            array of indexes in bins
+            array of indexes in distribution bins
         """
         if indexes is None:
-            if size is None:
-                size = len(self)
+            size = size or self.size
             indexes = Series(np.random.choice(len(self.prs),
                                               size=size, p=self.prs))
-        column = indexes.map(lambda x: self._sampling_bins(x))
+        column = indexes.map(lambda x: self._random_sample_at(x))
         if self.atype == 'datetime':
             if not self.categorical:
                 column = column.map(self._date_formatter)
