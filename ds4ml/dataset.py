@@ -104,19 +104,19 @@ class DataSet(DataFrame):
         frame[frame.columns] = frame[frame.columns].astype(int)
         return frame
 
-    def synthesize(self, epsilon=0.1, degree=2,
-                   pseudonyms=None, deletes=None, retains=None, records=None):
+    def _construct_bayesian_network(self, epsilon=0.1, degree=2,
+                                    pseudonyms=None, deletes=None, retains=None):
         """
-        Synthesize data set by a bayesian network to infer attributes'
-        dependence relationship and differential privacy to keep differentially
-        private.
+        Construct bayesian network of the DataSet.
         """
         deletes = deletes or []
         pseudonyms = pseudonyms or []
         retains = retains or []
 
         columns = [col for col in self.columns.values if col not in deletes]
-        nodes = set()  # nodes for bayesian networks
+        # nodes for bayesian networks, which does not include pseudonym columns
+        # or non-categorical string columns.
+        nodes = set()
         for col in columns:
             if col in pseudonyms or (
                     self[col].atype == 'string' and not self[col].categorical):
@@ -140,14 +140,47 @@ class DataSet(DataFrame):
         network = greedy_bayes(indexes, epsilon / 2, degree=degree,
                                retains=retains)
         cond_prs = noisy_conditionals(network, indexes, epsilon / 2)
+        return network, cond_prs
 
+    def to_pattern(self, path, epsilon=0.1, degree=2, pseudonyms=None,
+                   deletes=None, retains=None) -> None:
+        """
+        Serialize this dataset's patterns into a json file.
+        """
+        import json
+        network, cond_prs = self._construct_bayesian_network(
+            epsilon, degree=degree, pseudonyms=pseudonyms, deletes=deletes,
+            retains=retains)
+        pattern = dict({
+            "attrs": {label: attr.to_pattern() for label, attr in self.items()},
+            "network": network,
+            "prs": cond_prs
+        })
+        with open(path, 'w') as fp:
+            json.dump(pattern, fp, indent=2)
+
+    def synthesize(self, epsilon=0.1, degree=2,
+                   pseudonyms=None, deletes=None, retains=None, records=None):
+        """
+        Synthesize data set by a bayesian network to infer attributes'
+        dependence relationship and differential privacy to keep differentially
+        private.
+        """
+        deletes = deletes or []
+        pseudonyms = pseudonyms or []
+        retains = retains or []
+        network, cond_prs = self._construct_bayesian_network(
+            epsilon, degree=degree, pseudonyms=pseudonyms, deletes=deletes,
+            retains=retains)
+
+        columns = [col for col in self.columns.values if col not in deletes]
         records = records if records is not None else self.shape[0]
         sampling = self._sampling_dataset(network, cond_prs, records)
         frame = DataFrame(columns=columns)
         for col, attr in self.items():
             if col in deletes:
                 continue
-            if col in pseudonyms:
+            if col in pseudonyms:  # pseudonym column is not in bayesian network
                 frame[col] = attr.pseudonymize(size=records)
                 continue
             if col in retains:
@@ -155,7 +188,8 @@ class DataSet(DataFrame):
                 continue
             if col in sampling:
                 frame[col] = attr.choice(indexes=sampling[col])
-            elif not attr.categorical:
+                continue
+            if not attr.categorical:
                 frame[col] = attr.random()
             else:
                 frame[col] = attr.choice()

@@ -1,5 +1,8 @@
 """
 Attribute: data structure for 1-dimensional cross-sectional data
+
+This class only handle integer, float, string, datetime columns, and it can be
+labeled as categorical column.
 """
 
 import numpy as np

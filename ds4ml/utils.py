@@ -11,6 +11,7 @@ import csv
 import logging
 import numpy as np
 import os
+import re
 import hashlib
 
 from string import ascii_lowercase
@@ -43,6 +44,10 @@ def has_header(path, encoding='utf-8', sep=','):
     # TODO how about categorical columns
     _offset_stream()
     return tuple(df0.dtypes) != tuple(df1.dtypes)
+
+
+def ends_with_json(path):
+    return re.match(r".+\.json", path, re.IGNORECASE) is not None
 
 
 def read_data_from_csv(path, na_values=None, header=None, sep=","):

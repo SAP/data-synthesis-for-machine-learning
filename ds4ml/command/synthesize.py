@@ -12,10 +12,11 @@ import time
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Synthesize one dataset by Differential Privacy',
+        description='Synthesize one dataset by differential privacy',
         formatter_class=CustomFormatter,
         add_help=False)
-    parser.add_argument('file', help='set path of the CSV to be synthesized')
+    parser.add_argument('file', help='set path of a csv file to be synthesized '
+                                     'or path of a pattern file to be generated')
 
     # optional arguments
     group = parser.add_argument_group('general arguments')

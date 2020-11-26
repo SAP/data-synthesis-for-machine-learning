@@ -7,7 +7,7 @@ from ds4ml.utils import (plot_histogram,
                          plot_heatmap, write_csv, mutual_information,
                          normalize_range, is_datetime, str_to_list,
                          normalize_distribution, has_header,
-                         read_data_from_csv)
+                         read_data_from_csv, ends_with_json)
 
 
 def test_plot_confusion_matrix_output_string():
@@ -161,3 +161,10 @@ def test_read_data_from_csv():
     import io
     data = read_data_from_csv(io.StringIO(adult_with_head))
     assert data.equals(DataFrame(adult_with_head_res)) is True
+
+
+def test_ends_with_json():
+    assert ends_with_json("d.json") is True
+    assert ends_with_json("a.json") is True
+    assert ends_with_json("data\ A.jSon") is True
+    assert ends_with_json("data A.jSon") is True
