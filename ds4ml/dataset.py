@@ -2,47 +2,85 @@
 DataSet: data structure for potentially mixed-type Attribute.
 """
 
-from pandas import DataFrame
+from pandas import DataFrame, Series
 
 from ds4ml.attribute import Attribute
 
 
-class DataSet(DataFrame):
+class DataSetPattern(object):
+    """
+    A helper class of ``DataSet`` to store its patterns.
+    """
+    _network = None
+    _cond_prs = None
+    _attrs = None
+    _pattern_generated = False
+
+
+class DataSet(DataFrame, DataSetPattern):
 
     _metadata = ['_categories']
 
-    def __init__(self, data=None, index=None, columns=None, dtype=None,
-                 copy=False, categories=None):
+    def __init__(self, *args, **kwargs):
         """
         An improved DataFrame with categories information.
 
         Parameters
         ----------
-        categories : list of columns
+        categories : list of columns (optional)
             Column names whose values are categorical.
         """
-        DataFrame.__init__(self, data=data, index=index, columns=columns,
-                           dtype=dtype, copy=copy)
+        categories = kwargs.pop("categories", [])
+        network = kwargs.pop('network', None)
+        prs = kwargs.pop('prs', None)
+        attrs = kwargs.pop('attrs', None)
+        super(DataSet, self).__init__(*args, **kwargs)
         self.separator = '_'
-        self._categories = categories or []
+        self._categories = categories
+        if network is not None and prs is not None and attrs is not None:
+            self._set_pattern(network, prs, attrs)
 
     @property
     def _constructor(self):
         return DataSet
 
-    @property
-    def _constructor_sliced(self):
-        return Attribute
+    # disable _constructor_sliced method for single column slicing. Try to
+    # use __getitem__ method.
+    # @property
+    # def _constructor_sliced(self):
+    #     return Attribute
 
-    # workaround: override method to add parameter 'categorical' for Attribute
-    # constructor
-    def _box_col_values(self, values, items):
+    def __getitem__(self, key):
+        result = super(DataSet, self).__getitem__(key)
+        if isinstance(result, Series):
+            result.__class__ = Attribute
+            if self._attrs is not None:
+                result._set_pattern(self._attrs.get(key))
+            else:
+                result._set_pattern(None)
+        return result
+
+    @classmethod
+    def from_pattern(cls, filename):
         """
-        Provide boxed values for a column.
+        Alternate constructor to create a ``DataSet`` from a pattern file.
         """
-        klass = self._constructor_sliced
-        return klass(values, index=self.index, name=items, fastpath=True,
-                     categorical=items in self._categories)
+        import json
+        with open(filename) as f:
+            pattern = json.load(f)
+        # set columns to DataSet, which will set column name to each Attribute.
+        columns = pattern['attrs'].keys()
+        dataset = DataSet(columns=columns, network=pattern['network'],
+                          prs=pattern['prs'], attrs=pattern['attrs'])
+        return dataset
+
+    def _set_pattern(self, network=None, prs=None, attrs=None):
+        """ Set pattern data for the DataSet. """
+        if not self._pattern_generated:
+            self._network = network
+            self._cond_prs = prs
+            self._attrs = attrs
+            self._pattern_generated = True
 
     def mi(self):
         """ Return mutual information of pairwise attributes. """
@@ -169,15 +207,18 @@ class DataSet(DataFrame):
         deletes = deletes or []
         pseudonyms = pseudonyms or []
         retains = retains or []
-        network, cond_prs = self._construct_bayesian_network(
-            epsilon, degree=degree, pseudonyms=pseudonyms, deletes=deletes,
-            retains=retains)
+        if self._network is None and self._cond_prs is None:
+            self._network, self._cond_prs = self._construct_bayesian_network(
+                epsilon, degree=degree, pseudonyms=pseudonyms, deletes=deletes,
+                retains=retains)
 
         columns = [col for col in self.columns.values if col not in deletes]
         records = records if records is not None else self.shape[0]
-        sampling = self._sampling_dataset(network, cond_prs, records)
+        sampling = self._sampling_dataset(self._network, self._cond_prs, records)
         frame = DataFrame(columns=columns)
-        for col, attr in self.items():
+        # for col, attr in self.items(): # self.items() return Series
+        for col in self.columns:
+            attr = self[col]
             if col in deletes:
                 continue
             if col in pseudonyms:  # pseudonym column is not in bayesian network

@@ -13,16 +13,33 @@ from pandas import Series, DataFrame
 from dateutil.parser import parse
 from datetime import datetime, timedelta
 
-import ds4ml
 from ds4ml import utils
 
 
-class Attribute(Series):
+class AttributePattern(object):
+    """
+    A helper class of ``Attribute`` to store its patterns.
+    """
+    atype = None
+    categorical = False
+    _min = None
+    _max = None
+
+    # probability distribution (pr)
+    bins = None
+    prs = None
+    _pattern_generated = False
+
+    # bins can be int (size of histogram bins), str (as algorithm name),
+    # _bins = ds4ml.params['attribute.bins']
+    _bins = 20
+
+
+class Attribute(AttributePattern, Series):
 
     _epoch = datetime(1970, 1, 1)  # for datetime handling
 
-    def __init__(self, data, name=None, dtype=None, index=None, copy=False,
-                 fastpath=False, categorical=False):
+    def __init__(self, *args, **kwargs):
         """
         An improved Series with extra information, e.g. categorical,
         distribution bins.
@@ -34,20 +51,12 @@ class Attribute(Series):
             takes on a limited and fixed number of possible values. Examples:
             blood type, gender.
         """
-        Series.__init__(self, data, name=name, dtype=dtype, index=index,
-                        copy=copy, fastpath=fastpath)
+        categorical = kwargs.pop("categorical", False)
+        super(Attribute, self).__init__(*args, **kwargs)
 
-        # bins can be int (size of histogram bins), str (as algorithm name),
-        self._bins = ds4ml.params['attribute.bins']
+        self.categorical = categorical
 
-        self._min = None
-        self._max = None
-        self._step = None
-
-        # probability distribution (pr)
-        self.bins = None
-        self.prs = None
-
+    def _calculate_pattern(self):
         from pandas.api.types import infer_dtype
         # atype: date type for handle different kinds of attributes in data
         # synthesis, support: integer, float, string, datetime.
@@ -71,8 +80,10 @@ class Attribute(Series):
         if self.atype == 'float':
             self._decimals = self.decimals()
 
-        # how to define the attribute is categorical.
-        self.categorical = categorical or (
+        # The `categorical` option can be set to true when the attribute is
+        # string-typed and all values are not unique, and its value can be
+        # overrode by user.
+        self.categorical = self.categorical or (
                 self.atype == 'string' and not self.is_unique)
         self._set_domain()
         self._set_distribution()
@@ -94,6 +105,20 @@ class Attribute(Series):
     def _constructor_expanddim(self):
         from ds4ml.dataset import DataSet
         return DataSet
+
+    def _set_pattern(self, pattern):
+        if not self._pattern_generated:
+            if pattern is None:
+                # to calculate the pattern use its data
+                self._calculate_pattern()
+            else:
+                self.atype = pattern['atype']
+                self.categorical = pattern['categorical']
+                self._min = pattern['min']
+                self._max = pattern['max']
+                self.bins = np.array(pattern['bins'])
+                self.prs = np.array(pattern['prs'])
+                self._pattern_generated = True
 
     @property
     def is_numerical(self):
@@ -246,14 +271,13 @@ class Attribute(Series):
         indexes.fillna(len(self.bins), inplace=True)
         return indexes.astype(int, copy=False)
 
-    def metadata(self):
+    def to_pattern(self):
         """
         Return attribution's metadata information in JSON format or Python
         dictionary. Usually used in debug and testing.
         """
         return {
             'name': self.name,
-            'dtype': self.dtype,
             'atype': self.atype,
             'categorical': self.categorical,
             'min': self._min,

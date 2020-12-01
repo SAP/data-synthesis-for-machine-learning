@@ -81,7 +81,8 @@ def main():
                   labels=class_labels, test=test)
 
     duration = time.time() - start
-    print(f'Evaluation report: {args.output} in {round(duration, 2)} seconds.')
+    print(f'Evaluate files {args.source} and {args.target} and generate report '
+          f'at {args.output} in {round(duration, 2)} seconds.')
 
 
 if __name__ == '__main__':

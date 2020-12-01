@@ -53,6 +53,7 @@ def main():
           },
           entry_points={
               'console_scripts': [
+                  'data-pattern = ds4ml.command.pattern:main',
                   'data-synthesize = ds4ml.command.synthesize:main',
                   'data-evaluate = ds4ml.command.evaluate:main'
               ]

@@ -1,11 +1,10 @@
 """
-synthesize.py
+pattern.py
 
 """
 
 from ds4ml.dataset import DataSet
-from ds4ml.utils import (CustomFormatter, read_data_from_csv, file_name,
-                         str_to_list, ends_with_json)
+from ds4ml.utils import CustomFormatter, read_data_from_csv, file_name, str_to_list
 
 import argparse
 import time
@@ -13,11 +12,11 @@ import time
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Synthesize one dataset by differential privacy',
+        description='Serialize patterns of a dataset anonymously',
         formatter_class=CustomFormatter,
         add_help=False)
-    parser.add_argument('file', help='set path of a csv file to be synthesized '
-                                     'or path of a pattern file to be generated')
+    parser.add_argument('file', help='set path of a csv file to be patterned '
+                                     'anonymously')
 
     # optional arguments
     group = parser.add_argument_group('general arguments')
@@ -35,14 +34,11 @@ def main():
                             '(default null values are from pandas.read_csv)')
     group.add_argument('-o', '--output', metavar='FILE',
                        help="set the file name of output synthesized dataset ("
-                            "default is input file name with suffix '-a')")
+                            "default is input file name with suffix '_a')")
     group.add_argument('--no-header', action='store_true',
                        help='indicate there is no header in a CSV file, and '
                             'will take [#0, #1, #2, ...] as header. (default: '
                             'the tool will try to detect and take actions)')
-    group.add_argument('--records', metavar='INT', type=int,
-                       help='specify the records you want to generate; default '
-                            'is the same records with the original dataset')
     group.add_argument('--sep', metavar='STRING',
                        help='specify the delimiter of the input file')
 
@@ -66,45 +62,34 @@ def main():
     header = None if args.no_header else 'infer'
     sep = ',' if args.sep is None else args.sep
 
-    # check the file type from its extension
-    is_pattern = ends_with_json(args.file)
-    if is_pattern:
-        # construct DataSet from pattern filex
-        dataset = DataSet.from_pattern(args.file)
-    else:
-        data = read_data_from_csv(args.file, na_values=na_values, header=header,
-                                  sep=sep)
+    data = read_data_from_csv(args.file, na_values=na_values, header=header,
+                              sep=sep)
 
-        def complement(attrs, full):
-            return set(attrs or []) - set(full)
+    def complement(attrs, full):
+        return set(attrs or []) - set(full)
 
-        # check parameters: pseudonyms, deletes, categories
-        comp = complement(pseudonyms, data.columns)
-        if comp:
-            parser.exit(
-                message=f'--pseudonym columns: {comp} are not in csv file.')
-        comp = complement(deletes, data.columns)
-        if comp:
-            parser.exit(
-                message=f'--delete columns: {comp} are not in csv file.')
-        comp = complement(categories, data.columns)
-        if comp:
-            parser.exit(
-                message=f'--category columns: {comp} are not in csv file.')
+    # check parameters: pseudonyms, deletes, categories
+    comp = complement(pseudonyms, data.columns)
+    if comp:
+        parser.exit(message=f'--pseudonym columns: {comp} are not in csv file.')
+    comp = complement(deletes, data.columns)
+    if comp:
+        parser.exit(message=f'--delete columns: {comp} are not in csv file.')
+    comp = complement(categories, data.columns)
+    if comp:
+        parser.exit(message=f'--category columns: {comp} are not in csv file.')
 
-        dataset = DataSet(data, categories=categories)
+    dataset = DataSet(data, categories=categories)
 
-    synthesized = dataset.synthesize(epsilon=args.epsilon,
-                                     pseudonyms=pseudonyms, deletes=deletes,
-                                     retains=retains, records=args.records)
     if args.output is None:
         name = file_name(args.file)
-        args.output = f'{name}-a.csv'
-    synthesized.to_csv(args.output, index=False, sep=sep)
+        args.output = f'{name}-pattern.json'
+    dataset.to_pattern(path=args.output, epsilon=args.epsilon, deletes=deletes,
+                       pseudonyms=pseudonyms, retains=retains)
 
     duration = time.time() - start
-    print(f'Synthesize from {args.file} to file {args.output} in '
-          f'{round(duration, 2)} seconds.')
+    print(f'Analyze and serialize the patterns of {args.file} at {args.output} '
+          f'in {round(duration, 2)} seconds.')
 
 
 if __name__ == '__main__':
