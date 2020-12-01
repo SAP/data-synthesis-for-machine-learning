@@ -69,7 +69,7 @@ def main():
     # check the file type from its extension
     is_pattern = ends_with_json(args.file)
     if is_pattern:
-        # construct DataSet from pattern filex
+        # construct DataSet from pattern file
         dataset = DataSet.from_pattern(args.file)
     else:
         data = read_data_from_csv(args.file, na_values=na_values, header=header,

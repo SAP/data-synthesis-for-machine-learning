@@ -14,6 +14,7 @@ class DataSetPattern(object):
     _network = None
     _cond_prs = None
     _attrs = None
+    _records = None
     _pattern_generated = False
 
 
@@ -34,11 +35,14 @@ class DataSet(DataFrame, DataSetPattern):
         network = kwargs.pop('network', None)
         prs = kwargs.pop('prs', None)
         attrs = kwargs.pop('attrs', None)
+        records = kwargs.pop('records', None)
         super(DataSet, self).__init__(*args, **kwargs)
         self.separator = '_'
         self._categories = categories
         if network is not None and prs is not None and attrs is not None:
-            self._set_pattern(network, prs, attrs)
+            self._set_pattern(network, prs, attrs, records)
+        else:
+            self._records = self.shape[0]
 
     @property
     def _constructor(self):
@@ -71,15 +75,17 @@ class DataSet(DataFrame, DataSetPattern):
         # set columns to DataSet, which will set column name to each Attribute.
         columns = pattern['attrs'].keys()
         dataset = DataSet(columns=columns, network=pattern['network'],
-                          prs=pattern['prs'], attrs=pattern['attrs'])
+                          prs=pattern['prs'], attrs=pattern['attrs'],
+                          records=pattern['records'])
         return dataset
 
-    def _set_pattern(self, network=None, prs=None, attrs=None):
+    def _set_pattern(self, network=None, prs=None, attrs=None, records=None):
         """ Set pattern data for the DataSet. """
         if not self._pattern_generated:
             self._network = network
             self._cond_prs = prs
             self._attrs = attrs
+            self._records = records
             self._pattern_generated = True
 
     def mi(self):
@@ -192,7 +198,8 @@ class DataSet(DataFrame, DataSetPattern):
         pattern = dict({
             "attrs": {label: attr.to_pattern() for label, attr in self.items()},
             "network": network,
-            "prs": cond_prs
+            "prs": cond_prs,
+            "records": self._records
         })
         with open(path, 'w') as fp:
             json.dump(pattern, fp, indent=2)
@@ -213,7 +220,7 @@ class DataSet(DataFrame, DataSetPattern):
                 retains=retains)
 
         columns = [col for col in self.columns.values if col not in deletes]
-        records = records if records is not None else self.shape[0]
+        records = records if records is not None else self._records
         sampling = self._sampling_dataset(self._network, self._cond_prs, records)
         frame = DataFrame(columns=columns)
         # for col, attr in self.items(): # self.items() return Series

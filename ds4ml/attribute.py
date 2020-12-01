@@ -31,8 +31,8 @@ class AttributePattern(object):
     _pattern_generated = False
 
     # bins can be int (size of histogram bins), str (as algorithm name),
-    # _bins = ds4ml.params['attribute.bins']
-    _bins = 20
+    # _bin_size = ds4ml.params['attribute.bins']
+    _bin_size = 20
 
 
 class Attribute(AttributePattern, Series):
@@ -163,7 +163,7 @@ class Attribute(AttributePattern, Series):
             self.bins = np.array(domain)
         elif self.is_numerical:
             self._min, self._max = domain
-            self._step = (self._max - self._min) / self._bins
+            self._step = (self._max - self._min) / self._bin_size
             self.bins = np.array([self._min, self._max])
         elif self.atype == 'string':
             lengths = [len(str(i)) for i in domain]
@@ -192,7 +192,7 @@ class Attribute(AttributePattern, Series):
                 self._min = float(self.min())
                 self._max = float(self.max())
                 self.bins = np.array([self._min, self._max])
-                self._step = (self._max - self._min) / self._bins
+                self._step = (self._max - self._min) / self._bin_size
         else:
             self._min = float(self.min())
             self._max = float(self.max())
@@ -200,7 +200,7 @@ class Attribute(AttributePattern, Series):
                 self.bins = self.unique()
             else:
                 self.bins = np.array([self._min, self._max])
-                self._step = (self._max - self._min) / self._bins
+                self._step = (self._max - self._min) / self._bin_size
 
     def _set_distribution(self):
         if self.categorical:
@@ -218,9 +218,9 @@ class Attribute(AttributePattern, Series):
             # is half-open. If bins is 20, then len(hist)=20, len(edges)=21
             if self.atype == 'string':
                 hist, edges = np.histogram(self._items,
-                                           bins=self._bins)
+                                           bins=self._bin_size)
             else:
-                hist, edges = np.histogram(self, bins=self._bins,
+                hist, edges = np.histogram(self, bins=self._bin_size,
                                            range=(self._min, self._max))
             self.bins = edges[:-1]  # Remove the last bin edge
             self._counts = hist
@@ -414,7 +414,7 @@ class Attribute(AttributePattern, Series):
         if self.atype != 'string':
             return data.apply(lambda v:  # 1e-8 is a small delta
                               int((v - self._min) / (self._step + 1e-8))
-                              / self._bins)
+                              / self._bin_size)
         else:
             raise ValueError('Non-categorical attribute does not need encode '
                              'method.')
