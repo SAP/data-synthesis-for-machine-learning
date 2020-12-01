@@ -1,4 +1,3 @@
-__version__ = '0.1.2'
 
 from ds4ml.dataset import DataSet
 from ds4ml.attribute import Attribute

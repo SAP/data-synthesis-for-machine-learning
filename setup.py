@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
+import os
+
 from setuptools import setup
+
+pwd = os.path.abspath(os.path.dirname(__file__))
 
 INSTALL_REQUIRES = [
     'numpy >= 1.14.3',
@@ -31,22 +35,24 @@ There are two parts to this tool:
   and the synthesized dataset as the input, one utility evaluation report will
   be generated with several indicators.
 """
-URL = "https://github.com/SAP/data-synthesis-for-machine-learning"
-PROJECT_URLS = {
-    "Bug Tracker": URL + "/issues",
-    "Documentation": URL,
-    "Source Code": URL,
-}
+
+about = {}
+with open(os.path.join(pwd, 'ds4ml', '__version.py'), 'r', 'utf-8') as f:
+    exec(f.read(), about)
 
 
 def main():
-    setup(name='ds4ml',
-          description='A python library for data synthesis and evaluation',
+    setup(name=about['__title__'],
+          description=about['__description__'],
           long_description=LONG_DESCRIPTION,
           long_description_content_type='text/markdown',
-          project_urls=PROJECT_URLS,
-          url=URL,
-          version='0.1.2',
+          url=about['__url__'],
+          project_urls={
+              "Bug Tracker": about['__url__'] + "/issues",
+              "Documentation": about['__url__'],
+              "Source Code": about['__url__'],
+          },
+          version=about['__version__'],
           packages=['ds4ml', 'ds4ml.command'],
           package_data={
               '': ['template/*.html']
@@ -58,8 +64,8 @@ def main():
                   'data-evaluate = ds4ml.command.evaluate:main'
               ]
           },
-          maintainer="Yan Zhao",
-          maintainer_email="yan.zhao01@sap.com",
+          maintainer=about['__maintainer__'],
+          maintainer_email=about['__maintainer_email__'],
           install_requires=INSTALL_REQUIRES,
           platform='any')
 
