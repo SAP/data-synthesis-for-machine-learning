@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class BiFrame(object):
     def __init__(self, first: pd.DataFrame, second: pd.DataFrame,
-                 categories=None):
+                 categories=[]):
         """
         BiFrame class that contains two data sets, which currently provides
         kinds of analysis methods from distribution, correlation, and some

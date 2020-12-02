@@ -11,20 +11,31 @@ class DataSetPattern(object):
     """
     A helper class of ``DataSet`` to store its patterns.
     """
+    # DataSet's pattern data has following members:
     _network = None
     _cond_prs = None
     _attrs = None
     _records = None
+
+    # Options of DataSet constructor to preset some properties:
+    _categories = []  # categorical columns setting from command lines
+
     _pattern_generated = False
 
 
-class DataSet(DataFrame, DataSetPattern):
-
-    _metadata = ['_categories']
+class DataSet(DataSetPattern, DataFrame):
 
     def __init__(self, *args, **kwargs):
         """
-        An improved DataFrame with categories information.
+        An improved DataFrame with extra patterns information, e.g. its bayesian
+        network structure, conditional probabilities on the network, and pattern
+        information of all its columns.
+
+        The ``DataSet`` class has two modes:
+
+        - it has raw data, and then can calculate its pattern from the data;
+
+        - it doesn't have raw data, and only have the pattern from customer.
 
         Parameters
         ----------
@@ -32,15 +43,13 @@ class DataSet(DataFrame, DataSetPattern):
             Column names whose values are categorical.
         """
         categories = kwargs.pop("categories", [])
-        network = kwargs.pop('network', None)
-        prs = kwargs.pop('prs', None)
-        attrs = kwargs.pop('attrs', None)
-        records = kwargs.pop('records', None)
+        self._categories = [] if categories is None else categories
+        pattern = kwargs.pop('pattern', None)
         super(DataSet, self).__init__(*args, **kwargs)
         self.separator = '_'
-        self._categories = categories
-        if network is not None and prs is not None and attrs is not None:
-            self._set_pattern(network, prs, attrs, records)
+        if pattern is not None and all(k in pattern for k in
+                                       ['network', 'prs', 'attrs', 'records']):
+            self._set_pattern(pattern)
         else:
             self._records = self.shape[0]
 
@@ -59,9 +68,10 @@ class DataSet(DataFrame, DataSetPattern):
         if isinstance(result, Series):
             result.__class__ = Attribute
             if self._attrs is not None:
-                result._set_pattern(self._attrs.get(key))
+                result.set_pattern(self._attrs.get(key),
+                                   categorical=key in self._categories)
             else:
-                result._set_pattern(None)
+                result.set_pattern(categorical=key in self._categories)
         return result
 
     @classmethod
@@ -74,18 +84,16 @@ class DataSet(DataFrame, DataSetPattern):
             pattern = json.load(f)
         # set columns to DataSet, which will set column name to each Attribute.
         columns = pattern['attrs'].keys()
-        dataset = DataSet(columns=columns, network=pattern['network'],
-                          prs=pattern['prs'], attrs=pattern['attrs'],
-                          records=pattern['records'])
+        dataset = DataSet(columns=columns, pattern=pattern)
         return dataset
 
-    def _set_pattern(self, network=None, prs=None, attrs=None, records=None):
+    def _set_pattern(self, pattern=None):
         """ Set pattern data for the DataSet. """
         if not self._pattern_generated:
-            self._network = network
-            self._cond_prs = prs
-            self._attrs = attrs
-            self._records = records
+            self._network = pattern['network']
+            self._cond_prs = pattern['prs']
+            self._attrs = pattern['attrs']
+            self._records = pattern['records']
             self._pattern_generated = True
 
     def mi(self):

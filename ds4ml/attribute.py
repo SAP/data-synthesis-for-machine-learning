@@ -16,6 +16,10 @@ from datetime import datetime, timedelta
 from ds4ml import utils
 
 
+# Default environment variables for data processing and analysis
+DEFAULT_BIN_SIZE = 20
+
+
 class AttributePattern(object):
     """
     A helper class of ``Attribute`` to store its patterns.
@@ -26,15 +30,16 @@ class AttributePattern(object):
     categorical = False
     _min = None
     _max = None
+    _decimals = None
 
     # probability distribution (pr)
     bins = None
     prs = None
     _pattern_generated = False
 
-    # bins can be int (size of histogram bins), str (as algorithm name),
-    # _bin_size = ds4ml.params['attribute.bins']
-    _bin_size = 20
+    # Here _bin_size is int-typed (to show the size of histogram bins), which
+    # is different from bins in np.histogram.
+    _bin_size = DEFAULT_BIN_SIZE
 
 
 class Attribute(AttributePattern, Series):
@@ -43,8 +48,14 @@ class Attribute(AttributePattern, Series):
 
     def __init__(self, *args, **kwargs):
         """
-        An improved Series with extra information, e.g. categorical,
-        distribution bins.
+        An improved Series with extra pattern information, e.g. categorical,
+        min/max value, and probability distribution.
+
+        The ``Attribute`` class has two modes:
+
+        - it has raw data, and then can calculate its pattern from the data;
+
+        - it doesn't have raw data, and only have the pattern from customer.
 
         Parameters
         ----------
@@ -53,11 +64,9 @@ class Attribute(AttributePattern, Series):
             takes on a limited and fixed number of possible values. Examples:
             blood type, gender.
         """
-        categorical = kwargs.pop("categorical", False)
-        super(Attribute, self).__init__(*args, **kwargs)
-
-        self.categorical = categorical
-        self._set_pattern()
+        categorical = kwargs.pop('categorical', False)
+        super().__init__(*args, **kwargs)
+        self.set_pattern(categorical=categorical)
 
     def _calculate_pattern(self):
         from pandas.api.types import infer_dtype
@@ -107,13 +116,21 @@ class Attribute(AttributePattern, Series):
         from ds4ml.dataset import DataSet
         return DataSet
 
-    def _set_pattern(self, pattern=None):
+    def set_pattern(self, pattern=None, **kwargs):
+        """
+        Set an attribute's pattern, including its type, min/max value, and
+        probability distributions.
+        If patter is None, then calculation its pattern from its data.
+        """
         if not self._pattern_generated:
+            self.categorical = kwargs.pop("categorical", False)
             if pattern is None:
                 # to calculate the pattern use its data
                 self._calculate_pattern()
             else:
                 self._type = pattern['type']
+                if self.type == 'float':
+                    self._decimals = pattern['decimals']
                 self.categorical = pattern['categorical']
                 self._min = pattern['min']
                 self._max = pattern['max']
@@ -163,8 +180,7 @@ class Attribute(AttributePattern, Series):
             domain = list(map(self._to_seconds, domain))
         if (self.is_numerical and self.categorical and len(domain) > 2) or (
                 self.categorical):
-            self._min = min(domain)
-            self._max = max(domain)
+            self._min, self._max = min(domain), max(domain)
             self.bins = np.array(domain)
         elif self.is_numerical:
             self._min, self._max = domain
@@ -172,8 +188,7 @@ class Attribute(AttributePattern, Series):
             self.bins = np.array([self._min, self._max])
         elif self._type == 'string':
             lengths = [len(str(i)) for i in domain]
-            self._min = min(lengths)
-            self._max = max(lengths)
+            self._min, self._max = min(lengths), max(lengths)
             self.bins = np.array(domain)
         self._set_distribution()
 
@@ -287,6 +302,7 @@ class Attribute(AttributePattern, Series):
             'categorical': self.categorical,
             'min': self._min,
             'max': self._max,
+            'decimals': self._decimals if self.type == 'float' else None,
             'bins': self.bins.tolist(),
             'prs': self.prs.tolist()
         }
