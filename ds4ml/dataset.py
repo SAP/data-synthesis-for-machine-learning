@@ -100,14 +100,18 @@ class DataSet(DataFrame, DataSetPattern):
         """
         # If the data to encode is None, then transform source data _data;
         frame = DataFrame()
-        for col, attr in self.items():
+        # for col, attr in self.items():
+        for col in self.columns:
+            attr = self[col]
             if data is not None and col not in data:
                 continue
+            # when attribute is string-typed but not categorical, ignore its
+            # encode method.
             if attr.categorical:
                 subs = attr.encode(None if data is None else data[col])
                 for label in attr.bins:
                     frame[col + self.separator + str(label)] = subs[label]
-            else:
+            elif attr.type != 'string':
                 frame[col] = attr.encode(None if data is None else data[col])
         return frame
 
@@ -163,7 +167,7 @@ class DataSet(DataFrame, DataSetPattern):
         nodes = set()
         for col in columns:
             if col in pseudonyms or (
-                    self[col].atype == 'string' and not self[col].categorical):
+                    self[col].type == 'string' and not self[col].categorical):
                 continue
             nodes.add(col)
         # main steps of private bayesian network for synthesis

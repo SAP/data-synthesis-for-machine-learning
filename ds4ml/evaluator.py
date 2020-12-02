@@ -38,34 +38,31 @@ class BiFrame(object):
         categories : list of columns
             Column names whose values are categorical.
         """
-        # distribution
-        self._dt = {}
-
-        # To compare two data set, make sure that they have same columns.
-        # If not, compare the common part.
-        common = set(first.columns) & set(second.columns)
-        if len(common) != len(first.columns) or len(common) != len(second.columns):
-            logger.info(f"BiFrame constructed on attributes: {common}.")
+        # To compare two data sets, make sure that they have same columns. If
+        # not, compare them on their common columns.
+        cols = set(first.columns) & set(second.columns)
+        if len(cols) != len(first.columns) or len(cols) != len(second.columns):
+            logger.info(f"BiFrame works on columns: {cols}.")
 
         # left and right data set (ds)
-        self.first = DataSet(first[common], categories=categories)
-        self.second = DataSet(second[common], categories=categories)
-        self._columns = self.first.columns.sort_values().to_list()
+        self.fst = DataSet(first[cols], categories=categories)
+        self.snd = DataSet(second[cols], categories=categories)
+        self._columns = sorted(cols)
 
         # Make sure that two dataset have same domain for categorical
         # attributes, and same min, max values for numerical attributes.
         for col in self._columns:
             # If current column is not categorical, will ignore it.
-            if not self.first[col].categorical or not self.second[col].categorical:
+            if not self.fst[col].categorical or not self.snd[col].categorical:
                 continue
-            d1, d2 = self.first[col].domain, self.second[col].domain
+            d1, d2 = self.fst[col].domain, self.snd[col].domain
             if not np.array_equal(d1, d2):
-                if self.first[col].categorical:
+                if self.fst[col].categorical:
                     domain = np.unique(np.concatenate((d1, d2)))
                 else:
                     domain = [min(d1[0], d2[0]), max(d1[1], d2[1])]
-                self.first[col].domain = domain
-                self.second[col].domain = domain
+                self.fst[col].domain = domain
+                self.snd[col].domain = domain
 
     @property
     def columns(self):
@@ -76,30 +73,30 @@ class BiFrame(object):
         Return pairwise err (relative error) of columns' distribution.
         """
         # merge two frequency counts, and calculate relative difference
-        df = pd.DataFrame(columns=self._columns, index=['err'])
-        df.fillna(0)
-        for col in self._columns:
-            df.at['err', col] = relative_error(self.first[col].counts(),
-                                               self.second[col].counts())
-        return df
+        frame = pd.DataFrame(columns=self.columns, index=['err'])
+        frame.fillna(0)
+        for col in self.columns:
+            frame.at['err', col] = relative_error(self.fst[col].counts(),
+                                                  self.snd[col].counts())
+        return frame
 
     def jsd(self):
         """
         Return pairwise JSD (Jensen-Shannon divergence) of columns' distribution.
         """
-        df = pd.DataFrame(columns=self._columns, index=['jsd'])
-        df.fillna(0)
-        for col in self._columns:
-            df.at['jsd', col] = jensen_shannon_divergence(
-                self.first[col].counts(), self.second[col].counts())
-        return df
+        frame = pd.DataFrame(columns=self.columns, index=['jsd'])
+        frame.fillna(0)
+        for col in self.columns:
+            frame.at['jsd', col] = jensen_shannon_divergence(
+                self.fst[col].counts(), self.snd[col].counts())
+        return frame
 
     def corr(self):
         """
         Return pairwise correlation and dependence measured by mi (mutual
         information).
         """
-        return self.first.mi(), self.second.mi()
+        return self.fst.mi(), self.snd.mi()
 
     def dist(self, column):
         """
@@ -110,26 +107,23 @@ class BiFrame(object):
         column : str
             column name, whose distribution will be return
         """
-        if len(self._dt) == 0:
-            for c in self._columns:
-                self._dt[c] = {}
-                if self.first[c].categorical:
-                    bins = self.first[c].domain
-                    counts1 = self.first[c].counts(bins=bins)
-                    counts2 = self.second[c].counts(bins=bins)
-                else:
-                    min_, max_ = self.first[c].domain
-                    # the domain from two data set are same;
-                    # extend the domain to human-readable range
-                    bins = normalize_range(min_, max_ + 1)
-                    counts1 = self.first[c].counts(bins=bins)
-                    counts2 = self.second[c].counts(bins=bins)
-                    # Note: index, value of np.histogram has different length
-                    bins = bins[:-1]
-                self._dt[c]['bins'] = bins
-                # stack arrays vertically
-                self._dt[c]['counts'] = np.vstack((counts1, counts2))
-        return self._dt[column]['bins'], self._dt[column]['counts']
+        if column not in self.columns:
+            raise ValueError(f"{column} is not in current dataset.")
+        if self.fst[column].categorical:
+            bins = self.fst[column].domain
+            counts1 = self.fst[column].counts(bins=bins)
+            counts2 = self.snd[column].counts(bins=bins)
+        else:
+            min_, max_ = self.fst[column].domain
+            # the domain from two data set are same;
+            # extend the domain to human-readable range
+            bins = normalize_range(min_, max_ + 1)
+            counts1 = self.fst[column].counts(bins=bins)
+            counts2 = self.snd[column].counts(bins=bins)
+            # Note: index, value of np.histogram has different length
+            bins = bins[:-1]
+        # stack arrays vertically
+        return bins, np.vstack((counts1, counts2))
 
     def describe(self):
         """
@@ -165,8 +159,8 @@ class BiFrame(object):
         source male   1    3        or actual male   1    3      1    2
                female 2    4                  female 2    4      3    4
         """
-        if (not self.first[label].categorical or
-                not self.second[label].categorical):
+        if (not self.fst[label].categorical or
+                not self.snd[label].categorical):
             raise ValueError(f'Classifier can not run on non-categorical '
                              f'column: {label}')
         from sklearn.metrics import confusion_matrix
@@ -199,23 +193,23 @@ class BiFrame(object):
         # If test dataset is not provided, then split 20% of original dataset
         # for testing.
         if test is None:
-            fst_train, test = train_test_split(self.first, test_size=0.2)
-            snd_train, _ = train_test_split(self.second, test_size=0.2)
+            fst_train, test = train_test_split(self.fst, test_size=0.2)
+            snd_train, _ = train_test_split(self.snd, test_size=0.2)
         else:
-            fst_train = self.first
-            snd_train = self.second
+            fst_train = self.fst
+            snd_train = self.snd
         # ts = self.first.encode(data=fst_train)
         fst_train_x, fst_train_y = split_feature_label(
-                                            self.first.encode(data=fst_train))
-        test_x, test_y = split_feature_label(self.first.encode(data=test))
+                                            self.fst.encode(data=fst_train))
+        test_x, test_y = split_feature_label(self.fst.encode(data=test))
         snd_train_x, snd_train_y = split_feature_label(
-                                            self.first.encode(data=snd_train))
+                                            self.fst.encode(data=snd_train))
 
         # construct svm classifier, and predict on the same test dataset
         fst_predict_y = train_and_predict(fst_train_x, fst_train_y, test_x)
         snd_predict_y = train_and_predict(snd_train_x, snd_train_y, test_x)
 
-        columns = self.first[label].bins
+        columns = self.fst[label].bins
         labels = range(len(columns))
         # If test dataset has the columns as class label for prediction, return
         # two expected scores: (self.first) original dataset's and (self.second)

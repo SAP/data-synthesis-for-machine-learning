@@ -13,7 +13,7 @@ size = 30
 def test_integer_attribute():
     ints = random.randint(1, 100, size)
     attr = Attribute(Series(ints), name='ID', categorical=False)
-    assert attr.atype == 'integer'
+    assert attr.type == 'integer'
     assert attr.name == 'ID'
     assert attr._min >= 1
     assert attr._max <= 100
@@ -22,13 +22,13 @@ def test_integer_attribute():
 
     from .testdata import adults01
     attr = Attribute(adults01['age'])
-    assert attr.atype == 'integer'
+    assert attr.type == 'integer'
 
 
 def test_float_attribute():
     floats = random.uniform(1, 100, size)
     attr = Attribute(Series(floats, name='Float'))
-    assert attr.atype == 'float'
+    assert attr.type == 'float'
     assert attr._min >= 1
     assert attr._max <= 100
     assert len(attr.bins) == 20
@@ -38,7 +38,7 @@ def test_float_attribute():
 def test_string_attribute():
     strings = list(map(lambda x: randomize_string(5), range(size)))
     attr = Attribute(Series(strings, name='String'), categorical=True)
-    assert attr.atype == 'string'
+    assert attr.type == 'string'
     assert attr._min == 5
     assert attr.categorical
 
@@ -209,7 +209,7 @@ def test_pseudonymize_floats():
                        pseudonyms.value_counts().values)
 
 
-def test_to_pseudonym_dates():
+def test_pseudonym_dates():
     ints = Series(['07/15/2019', '07/24/2019', '07/23/2019', '07/22/2019',
                    '07/21/2019', '07/22/2019', '07/23/2019', '07/24/2019',
                    '07/23/2019', '07/22/2019', '07/15/2019'])

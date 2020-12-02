@@ -20,7 +20,9 @@ class AttributePattern(object):
     """
     A helper class of ``Attribute`` to store its patterns.
     """
-    atype = None
+    # _type: date type for handle different kinds of attributes in data
+    # synthesis, only support: integer, float, string, datetime.
+    _type = None
     categorical = False
     _min = None
     _max = None
@@ -55,36 +57,35 @@ class Attribute(AttributePattern, Series):
         super(Attribute, self).__init__(*args, **kwargs)
 
         self.categorical = categorical
+        self._set_pattern()
 
     def _calculate_pattern(self):
         from pandas.api.types import infer_dtype
-        # atype: date type for handle different kinds of attributes in data
-        # synthesis, support: integer, float, string, datetime.
-        self.atype = infer_dtype(self, skipna=True)
-        if self.atype == 'integer':
+        self._type = infer_dtype(self, skipna=True)
+        if self._type == 'integer':
             pass
-        elif self.atype == 'floating' or self.atype == 'mixed-integer-float':
-            self.atype = 'float'
-        elif self.atype in ['string', 'mixed-integer', 'mixed']:
-            self.atype = 'string'
+        elif self._type == 'floating' or self._type == 'mixed-integer-float':
+            self._type = 'float'
+        elif self._type in ['string', 'mixed-integer', 'mixed']:
+            self._type = 'string'
             if all(map(utils.is_datetime, self._values)):
-                self.atype = 'datetime'
+                self._type = 'datetime'
 
         # fill the missing values with the most frequent value
         self.fillna(self.mode()[0], inplace=True)
 
         # special handling for datetime attribute
-        if self.atype == 'datetime':
+        if self._type == 'datetime':
             self.update(self.map(self._to_seconds).map(self._date_formatter))
 
-        if self.atype == 'float':
+        if self._type == 'float':
             self._decimals = self.decimals()
 
         # The `categorical` option can be set to true when the attribute is
         # string-typed and all values are not unique, and its value can be
         # overrode by user.
         self.categorical = self.categorical or (
-                self.atype == 'string' and not self.is_unique)
+                self._type == 'string' and not self.is_unique)
         self._set_domain()
         self._set_distribution()
 
@@ -106,23 +107,27 @@ class Attribute(AttributePattern, Series):
         from ds4ml.dataset import DataSet
         return DataSet
 
-    def _set_pattern(self, pattern):
+    def _set_pattern(self, pattern=None):
         if not self._pattern_generated:
             if pattern is None:
                 # to calculate the pattern use its data
                 self._calculate_pattern()
             else:
-                self.atype = pattern['atype']
+                self._type = pattern['type']
                 self.categorical = pattern['categorical']
                 self._min = pattern['min']
                 self._max = pattern['max']
                 self.bins = np.array(pattern['bins'])
                 self.prs = np.array(pattern['prs'])
-                self._pattern_generated = True
+            self._pattern_generated = True
 
     @property
     def is_numerical(self):
-        return self.atype == 'integer' or self.atype == 'float'
+        return self._type == 'integer' or self._type == 'float'
+
+    @property
+    def type(self):
+        return self._type
 
     @property
     def domain(self):
@@ -154,7 +159,7 @@ class Attribute(AttributePattern, Series):
         """
         # if a attribute is numerical and categorical and domain's length is
         # bigger than 2, take it as categorical. e.g. zip code.
-        if self.atype == 'datetime':
+        if self._type == 'datetime':
             domain = list(map(self._to_seconds, domain))
         if (self.is_numerical and self.categorical and len(domain) > 2) or (
                 self.categorical):
@@ -165,7 +170,7 @@ class Attribute(AttributePattern, Series):
             self._min, self._max = domain
             self._step = (self._max - self._min) / self._bin_size
             self.bins = np.array([self._min, self._max])
-        elif self.atype == 'string':
+        elif self._type == 'string':
             lengths = [len(str(i)) for i in domain]
             self._min = min(lengths)
             self._max = max(lengths)
@@ -176,7 +181,7 @@ class Attribute(AttributePattern, Series):
         """
         Compute domain (min, max, distribution bins) from input data
         """
-        if self.atype == 'string':
+        if self._type == 'string':
             self._items = self.astype(str).map(len)
             self._min = int(self._items.min())
             self._max = int(self._items.max())
@@ -184,7 +189,7 @@ class Attribute(AttributePattern, Series):
                 self.bins = self.unique()
             else:
                 self.bins = np.array([self._min, self._max])
-        elif self.atype == 'datetime':
+        elif self._type == 'datetime':
             self.update(self.map(self._to_seconds))
             if self.categorical:
                 self.bins = self.unique()
@@ -208,7 +213,7 @@ class Attribute(AttributePattern, Series):
             for value in set(self.bins) - set(counts.index):
                 counts[value] = 0
             counts.sort_index(inplace=True)
-            if self.atype == 'datetime':
+            if self.type == 'datetime':
                 counts.index = list(map(self._date_formatter, counts.index))
             self._counts = counts.values
             self.prs = utils.normalize_distribution(counts)
@@ -216,7 +221,7 @@ class Attribute(AttributePattern, Series):
         else:
             # Note: hist, edges = numpy.histogram(), all but the last bin
             # is half-open. If bins is 20, then len(hist)=20, len(edges)=21
-            if self.atype == 'string':
+            if self.type == 'string':
                 hist, edges = np.histogram(self._items,
                                            bins=self._bin_size)
             else:
@@ -225,7 +230,7 @@ class Attribute(AttributePattern, Series):
             self.bins = edges[:-1]  # Remove the last bin edge
             self._counts = hist
             self.prs = utils.normalize_distribution(hist)
-            if self.atype == 'integer':
+            if self.type == 'integer':
                 self._min = int(self._min)
                 self._max = int(self._max)
 
@@ -239,7 +244,7 @@ class Attribute(AttributePattern, Series):
         if bins is None:
             return self._counts
         if self.categorical:
-            if self.atype == 'datetime':
+            if self.type == 'datetime':
                 bins = list(map(self._to_seconds, bins))
             counts = self.value_counts()
             for value in set(bins) - set(counts.index):
@@ -278,7 +283,7 @@ class Attribute(AttributePattern, Series):
         """
         return {
             'name': self.name,
-            'atype': self.atype,
+            'type': self._type,
             'categorical': self.categorical,
             'min': self._min,
             'max': self._max,
@@ -309,14 +314,17 @@ class Attribute(AttributePattern, Series):
         substitute identifiable data with a reversible, consistent value.
         """
         size = size or self.size
-        attr = Series(np.random.choice(self.bins, size=size, p=self.prs))
+        if size != self.size:
+            attr = Series(np.random.choice(self.bins, size=size, p=self.prs))
+        else:
+            attr = self
         if self.categorical:
             mapping = {b: utils.pseudonymise_string(b) for b in self.bins}
             return attr.map(lambda x: mapping[x])
 
-        if self.atype == 'string':
+        if self._type == 'string':
             return attr.map(utils.pseudonymise_string)
-        elif self.is_numerical or self.atype == 'datetime':
+        elif self.is_numerical or self._type == 'datetime':
             return attr.map(str).map(utils.pseudonymise_string)
 
     def random(self, size=None):
@@ -332,16 +340,16 @@ class Attribute(AttributePattern, Series):
                               (self._max - self._min) / size)
 
         np.random.shuffle(rands)
-        if self.atype == 'string':
+        if self._type == 'string':
             if self._min == self._max:
                 length = self._min
             else:
                 length = np.random.randint(self._min, self._max)
             vectorized = np.vectorize(lambda x: utils.randomize_string(length))
             rands = vectorized(rands)
-        elif self.atype == 'integer':
+        elif self._type == 'integer':
             rands = list(map(int, rands))
-        elif self.atype == 'datetime':
+        elif self._type == 'datetime':
             rands = list(map(self._date_formatter, rands))
         return Series(rands)
 
@@ -375,14 +383,14 @@ class Attribute(AttributePattern, Series):
             indexes = Series(np.random.choice(len(self.prs),
                                               size=size, p=self.prs))
         column = indexes.map(lambda x: self._random_sample_at(x))
-        if self.atype == 'datetime':
+        if self.type == 'datetime':
             if not self.categorical:
                 column = column.map(self._date_formatter)
-        elif self.atype == 'float':
+        elif self.type == 'float':
             column = column.round(self._decimals)
-        elif self.atype == 'integer':
+        elif self.type == 'integer':
             column = column.round().astype(int)
-        elif self.atype == 'string':
+        elif self.type == 'string':
             if not self.categorical:
                 column = column.map(lambda x: utils.randomize_string(int(x)))
         return column
@@ -399,7 +407,7 @@ class Attribute(AttributePattern, Series):
         if data is None:
             data = self.copy()
         else:
-            if self.atype == 'datetime':
+            if self.type == 'datetime':
                 if all(map(utils.is_datetime, data)):
                     data = data.map(self._to_seconds)
                 else:
@@ -411,7 +419,7 @@ class Attribute(AttributePattern, Series):
                 df[c] = data.apply(lambda v: 1 if v == c else 0)
             return df
 
-        if self.atype != 'string':
+        if self.type != 'string':
             return data.apply(lambda v:  # 1e-8 is a small delta
                               int((v - self._min) / (self._step + 1e-8))
                               / self._bin_size)

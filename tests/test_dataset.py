@@ -48,9 +48,8 @@ def test_encode_empty_column():
             [1003, 'C', 'Male'],
             [1004, 'D', 'Female'],
             [1005, 'E', 'Female']]
-    df = DataFrame(data, columns=['ID', 'Name', 'Sex'])
-    ds = DataSet(df)
-    x = DataFrame(data[-2:], columns=df.columns)
+    ds = DataSet(data, columns=['ID', 'Name', 'Sex'])
+    x = DataFrame(data[-2:], columns=['ID', 'Name', 'Sex'])
     x_tf = ds.encode(data=x)
     # Name is not categorical, because it has unique values
     assert x_tf.shape == (2, 3)
