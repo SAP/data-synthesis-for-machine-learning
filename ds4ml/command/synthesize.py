@@ -1,5 +1,8 @@
-"""
-synthesize.py
+"""ds4ml.command.synthesize
+
+Provides the command line to synthesize a dataset directly (e.g. csv file) or
+from a pattern file which describes the dataset anonymously (and which can be
+got through command `data-pattern`).
 
 """
 

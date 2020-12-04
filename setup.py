@@ -37,7 +37,8 @@ There are two parts to this tool:
 """
 
 about = {}
-with open(os.path.join(pwd, 'ds4ml', '__version.py'), 'r', 'utf-8') as f:
+with open(os.path.join(pwd, 'ds4ml', '__version__.py'), mode='r',
+          encoding='utf-8') as f:
     exec(f.read(), about)
 
 

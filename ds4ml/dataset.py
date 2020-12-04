@@ -7,7 +7,7 @@ from pandas import DataFrame, Series
 from ds4ml.attribute import Attribute
 
 
-class DataSetPattern(object):
+class DataSetPattern:
     """
     A helper class of ``DataSet`` to store its patterns.
     """

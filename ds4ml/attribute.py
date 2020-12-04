@@ -4,14 +4,13 @@ Attribute: data structure for 1-dimensional cross-sectional data
 This class only handle integer, float, string, datetime columns, and it can be
 labeled as categorical column.
 """
-
-import numpy as np
-
 from bisect import bisect_right
 from random import uniform
 from pandas import Series, DataFrame
 from dateutil.parser import parse
 from datetime import datetime, timedelta
+
+import numpy as np
 
 from ds4ml import utils
 
@@ -20,7 +19,7 @@ from ds4ml import utils
 DEFAULT_BIN_SIZE = 20
 
 
-class AttributePattern(object):
+class AttributePattern:
     """
     A helper class of ``Attribute`` to store its patterns.
     """
@@ -41,6 +40,10 @@ class AttributePattern(object):
     # Here _bin_size is int-typed (to show the size of histogram bins), which
     # is different from bins in np.histogram.
     _bin_size = DEFAULT_BIN_SIZE
+
+    @property
+    def type(self):
+        return self._type
 
 
 class Attribute(AttributePattern, Series):
@@ -144,10 +147,6 @@ class Attribute(AttributePattern, Series):
         return self._type == 'integer' or self._type == 'float'
 
     @property
-    def type(self):
-        return self._type
-
-    @property
     def domain(self):
         """
         Return attribute's domain, which can be a list of values for categorical
@@ -156,8 +155,7 @@ class Attribute(AttributePattern, Series):
         """
         if self.categorical:
             return self.bins
-        else:
-            return [self.min_, self.max_]
+        return [self.min_, self.max_]
 
     @domain.setter
     def domain(self, domain: list):
@@ -268,16 +266,14 @@ class Attribute(AttributePattern, Series):
             if normalize:
                 return np.array([round(counts.get(b)/sum(counts) * 100, 2)
                                  for b in bins])
-            else:
-                return np.array([counts.get(b) for b in bins])
-        else:
-            if len(bins) == 1:
-                return np.array([self.size])
-            hist, _ = np.histogram(self, bins=bins)
-            if normalize:
-                return (hist / hist.sum() * 100).round(2)
-            else:
-                return hist
+            return np.array([counts.get(b) for b in bins])
+
+        if len(bins) == 1:
+            return np.array([self.size])
+        hist, _ = np.histogram(self, bins=bins)
+        if normalize:
+            return (hist / hist.sum() * 100).round(2)
+        return hist
 
     def bin_indexes(self):
         """
@@ -339,9 +335,9 @@ class Attribute(AttributePattern, Series):
             mapping = {b: utils.pseudonymise_string(b) for b in self.bins}
             return attr.map(lambda x: mapping[x])
 
-        if self._type == 'string':
+        if self.type == 'string':
             return attr.map(utils.pseudonymise_string)
-        elif self.is_numerical or self._type == 'datetime':
+        elif self.is_numerical or self.type == 'datetime':
             return attr.map(str).map(utils.pseudonymise_string)
 
     def random(self, size=None):
@@ -357,16 +353,16 @@ class Attribute(AttributePattern, Series):
                               (self.max_ - self.min_) / size)
 
         np.random.shuffle(rands)
-        if self._type == 'string':
+        if self.type == 'string':
             if self.min_ == self.max_:
                 length = self.min_
             else:
                 length = np.random.randint(self.min_, self.max_)
             vectorized = np.vectorize(lambda x: utils.randomize_string(length))
             rands = vectorized(rands)
-        elif self._type == 'integer':
+        elif self.type == 'integer':
             rands = list(map(int, rands))
-        elif self._type == 'datetime':
+        elif self.type == 'datetime':
             rands = list(map(self._date_formatter, rands))
         return Series(rands)
 
@@ -378,8 +374,7 @@ class Attribute(AttributePattern, Series):
         length = len(self.bins)
         if index < length - 1:
             return uniform(self.bins[index], self.bins[index + 1])
-        else:
-            return uniform(self.bins[-1], self.max_)
+        return uniform(self.bins[-1], self.max_)
 
     def choice(self, size=None, indexes=None):
         """
@@ -431,15 +426,13 @@ class Attribute(AttributePattern, Series):
                     data = data.map(int)
 
         if self.categorical:
-            df = DataFrame()
-            for c in self.bins:
-                df[c] = data.apply(lambda v: 1 if v == c else 0)
-            return df
+            frame = DataFrame()
+            for col in self.bins:
+                frame[col] = data.apply(lambda v: 1 if v == col else 0)
+            return frame
 
         if self.type != 'string':
             return data.apply(lambda v:  # 1e-8 is a small delta
                               int((v - self.min_) / (self._step + 1e-8))
                               / self._bin_size)
-        else:
-            raise ValueError('Non-categorical attribute does not need encode '
-                             'method.')
+        raise ValueError('Can\'t encode Non-categorical attribute.')
