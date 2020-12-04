@@ -19,20 +19,27 @@ There are one demo dataset (part of the public dataset from [Adult](https://arch
 ### Procedure
   There are two parts in the project, data synthesizer and data utility evaluation.
 + Synthesizer:  
-  `data-synthesize <original-dataset> <-o> <synthesized-dataset-path> `  
+  ```
+  data-synthesize <original-dataset> <-o> <synthesized-dataset-path>
+  ```  
   Use *adult.csv* as *original-dataset*, the synthesizer dataset *adult_a.csv* is generated under current folder by default.
+  
+  - To save the cost of (synthesized) data transfer, command `data-pattern` can help, which serialize anonymous patterns of a dataset. And then use `data-synthesize` to generate dataset from the pattern.
+  ```
+  data-pattern <original-dataset> <-o> <anonymous-pattern-path>
+  data-synthesize <anonymous-pattern-path> <-o> <synthesized-dataset-path>
+  ```
 + Evaluation:  
-  `data-evaluate <original-dataset> <synthesized-dataset> --class-label <attribute1,attribute...>`  
-  Use *adult.csv* as *original-dataset*, *adult_a.csv* as *synthesized-dataset*, *sex,salary* as *attribute..* in "--class-label", one *report.html* is generated under current folder by default.
+  ```
+  data-evaluate <original-dataset> <synthesized-dataset> --class-label <attribute1,attribute...>
+  ```  
+  Use *adult.csv* as *original-dataset*, *adult-a.csv* as *synthesized-dataset*, *sex,salary* as *attribute* in "--class-label", one *report.html* is generated under current folder by default.
 
 ## Download and Installation
 + Install Python 
   Ensure your python >=3.6.0, you can download it from [python.org](https://www.python.org/)
-+ After clone the project, install it as follows
-  ```
-  python setup.py install
-  ```
-  The project provides two commands: `data-synthesize` and `data-evaluate`. Run `data-synthesize -h` and `data-evaluate -h` for details.
++ After clone the project, install it as: `python setup.py install`.
+  The project provides three commands: `data-synthesize`, `data-pattern` and `data-evaluate`. Run them with option `-h` for details.
 
 + Help of `data-synthesize`
   Run `data-synthesize -h`.
@@ -63,14 +70,15 @@ There are one demo dataset (part of the public dataset from [Adult](https://arch
                         will try to detect and take actions)
     --records INT       specify the records you want to generate; default is the
                         same records with the original dataset
-    --sep String        specify the delimiter of the input file
+    --sep STRING        specify the delimiter of the input file
 
   advanced arguments:
     -e, --epsilon FLOAT  set epsilon for differential privacy (default 0.1)
     --category LIST      set categorical columns separated by a comma.
     --retain LIST        set columns to retain the values
-   
   ```
+
+  - Note: argument **epsilon** (ε) defines the privacy guarantee. Its typical values are 0.1 or 0.01. The lower the value of epsilon, the more noise is applied, and the less the utility. 
 
 
 + Help of `data-evaluate`
@@ -104,7 +112,7 @@ There are one demo dataset (part of the public dataset from [Adult](https://arch
   ```
   
 ## How to obtain support
-If you encounter an issue, you can open an issue in GitHub
+If you encounter an issue, you can open an issue in GitHub.
 
 ## Contribute
-Please check our [Contribution Guidelines](/CONTRIBUTING.md)
+Please check our [Contribution Guidelines](/CONTRIBUTING.md).

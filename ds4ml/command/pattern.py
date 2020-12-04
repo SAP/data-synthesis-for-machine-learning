@@ -33,8 +33,8 @@ def main():
                        help='set additional values to recognize as NA/NaN; '
                             '(default null values are from pandas.read_csv)')
     group.add_argument('-o', '--output', metavar='FILE',
-                       help="set the file name of output synthesized dataset ("
-                            "default is input file name with suffix '_a')")
+                       help="set the file name of anonymous patterns (default "
+                            "is input file name with suffix '-pattern.json')")
     group.add_argument('--no-header', action='store_true',
                        help='indicate there is no header in a CSV file, and '
                             'will take [#0, #1, #2, ...] as header. (default: '

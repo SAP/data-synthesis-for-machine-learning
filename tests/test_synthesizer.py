@@ -28,7 +28,7 @@ def test_noisy_distributions():
         [1, 1, 50],
         [0, 0, 32],
         [0, 0, 28]
-    ], columns=['salary', 'sex',  'age'])
+    ], columns=['salary', 'sex', 'age'])
     columns = ['salary', 'sex']
     epsilon = 0.05
     noisy = noisy_distributions(dataset, columns, epsilon)
@@ -53,7 +53,7 @@ def test_noisy_conditionals():
     network = [('salary', ['sex']), ('age', ['sex', 'salary'])]
     noisy = noisy_conditionals(network, dataset, epsilon)
     assert len(noisy['sex']) == 2
-    assert sum(noisy['sex']) == 1.0
+    assert (1.0 - sum(noisy['sex'])) < 1e-6
     assert len(noisy['salary']) == 2
     assert '[0]' in noisy['salary']
     assert '[1]' in noisy['salary']

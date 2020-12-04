@@ -15,8 +15,8 @@ def test_integer_attribute():
     attr = Attribute(Series(ints), name='ID', categorical=False)
     assert attr.type == 'integer'
     assert attr.name == 'ID'
-    assert attr._min >= 1
-    assert attr._max <= 100
+    assert attr.min_ >= 1
+    assert attr.max_ <= 100
     assert len(attr.bins) == 20
     assert isclose(sum(attr.prs), 1.0)
 
@@ -29,8 +29,8 @@ def test_float_attribute():
     floats = random.uniform(1, 100, size)
     attr = Attribute(Series(floats, name='Float'))
     assert attr.type == 'float'
-    assert attr._min >= 1
-    assert attr._max <= 100
+    assert attr.min_ >= 1
+    assert attr.max_ <= 100
     assert len(attr.bins) == 20
     assert isclose(sum(attr.prs), 1.0)
 
@@ -39,18 +39,18 @@ def test_string_attribute():
     strings = list(map(lambda x: randomize_string(5), range(size)))
     attr = Attribute(Series(strings, name='String'), categorical=True)
     assert attr.type == 'string'
-    assert attr._min == 5
+    assert attr.min_ == 5
     assert attr.categorical
 
 
 def test_set_domain_for_integer_attribute():
     ints = random.randint(1, 100, size)
     attr = Attribute(Series(ints, name='Integer'))
-    assert attr._min >= 1
-    assert attr._max <= 100
+    assert attr.min_ >= 1
+    assert attr.max_ <= 100
     attr.domain = [-2, 120]
-    assert attr._min == -2
-    assert attr._max == 120
+    assert attr.min_ == -2
+    assert attr.max_ == 120
 
 
 def test_set_domain_for_integer_categorical_attribute():
@@ -66,11 +66,11 @@ def test_set_domain_for_integer_categorical_attribute():
 def test_set_domain_for_float_attribute():
     floats = random.uniform(1, 100, size)
     attr = Attribute(Series(floats, name='Float'))
-    assert attr._min >= 1
-    assert attr._max <= 100
+    assert attr.min_ >= 1
+    assert attr.max_ <= 100
     attr.domain = [-2, 120]
-    assert attr._min == -2
-    assert attr._max == 120
+    assert attr.min_ == -2
+    assert attr.max_ == 120
 
 
 def test_set_domain_for_string_attribute():

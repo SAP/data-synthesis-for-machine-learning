@@ -28,8 +28,9 @@ class AttributePattern(object):
     # synthesis, only support: integer, float, string, datetime.
     _type = None
     categorical = False
-    _min = None
-    _max = None
+    # min, max has been defined as member function of pandas.Series
+    min_ = None
+    max_ = None
     _decimals = None
 
     # probability distribution (pr)
@@ -94,7 +95,7 @@ class Attribute(AttributePattern, Series):
         # string-typed and all values are not unique, and its value can be
         # overrode by user.
         self.categorical = self.categorical or (
-                self._type == 'string' and not self.is_unique)
+            self._type == 'string' and not self.is_unique)
         self._set_domain()
         self._set_distribution()
 
@@ -132,8 +133,8 @@ class Attribute(AttributePattern, Series):
                 if self.type == 'float':
                     self._decimals = pattern['decimals']
                 self.categorical = pattern['categorical']
-                self._min = pattern['min']
-                self._max = pattern['max']
+                self.min_ = pattern['min']
+                self.max_ = pattern['max']
                 self.bins = np.array(pattern['bins'])
                 self.prs = np.array(pattern['prs'])
             self._pattern_generated = True
@@ -156,7 +157,7 @@ class Attribute(AttributePattern, Series):
         if self.categorical:
             return self.bins
         else:
-            return [self._min, self._max]
+            return [self.min_, self.max_]
 
     @domain.setter
     def domain(self, domain: list):
@@ -176,19 +177,19 @@ class Attribute(AttributePattern, Series):
         """
         # if a attribute is numerical and categorical and domain's length is
         # bigger than 2, take it as categorical. e.g. zip code.
-        if self._type == 'datetime':
+        if self.type == 'datetime':
             domain = list(map(self._to_seconds, domain))
         if (self.is_numerical and self.categorical and len(domain) > 2) or (
                 self.categorical):
-            self._min, self._max = min(domain), max(domain)
+            self.min_, self.max_ = min(domain), max(domain)
             self.bins = np.array(domain)
         elif self.is_numerical:
-            self._min, self._max = domain
-            self._step = (self._max - self._min) / self._bin_size
-            self.bins = np.array([self._min, self._max])
+            self.min_, self.max_ = domain
+            self._step = (self.max_ - self.min_) / self._bin_size
+            self.bins = np.array([self.min_, self.max_])
         elif self._type == 'string':
             lengths = [len(str(i)) for i in domain]
-            self._min, self._max = min(lengths), max(lengths)
+            self.min_, self.max_ = min(lengths), max(lengths)
             self.bins = np.array(domain)
         self._set_distribution()
 
@@ -198,29 +199,29 @@ class Attribute(AttributePattern, Series):
         """
         if self._type == 'string':
             self._items = self.astype(str).map(len)
-            self._min = int(self._items.min())
-            self._max = int(self._items.max())
+            self.min_ = int(self._items.min())
+            self.max_ = int(self._items.max())
             if self.categorical:
                 self.bins = self.unique()
             else:
-                self.bins = np.array([self._min, self._max])
+                self.bins = np.array([self.min_, self.max_])
         elif self._type == 'datetime':
             self.update(self.map(self._to_seconds))
             if self.categorical:
                 self.bins = self.unique()
             else:
-                self._min = float(self.min())
-                self._max = float(self.max())
-                self.bins = np.array([self._min, self._max])
-                self._step = (self._max - self._min) / self._bin_size
+                self.min_ = float(self.min())
+                self.max_ = float(self.max())
+                self.bins = np.array([self.min_, self.max_])
+                self._step = (self.max_ - self.min_) / self._bin_size
         else:
-            self._min = float(self.min())
-            self._max = float(self.max())
+            self.min_ = float(self.min())
+            self.max_ = float(self.max())
             if self.categorical:
                 self.bins = self.unique()
             else:
-                self.bins = np.array([self._min, self._max])
-                self._step = (self._max - self._min) / self._bin_size
+                self.bins = np.array([self.min_, self.max_])
+                self._step = (self.max_ - self.min_) / self._bin_size
 
     def _set_distribution(self):
         if self.categorical:
@@ -241,13 +242,13 @@ class Attribute(AttributePattern, Series):
                                            bins=self._bin_size)
             else:
                 hist, edges = np.histogram(self, bins=self._bin_size,
-                                           range=(self._min, self._max))
+                                           range=(self.min_, self.max_))
             self.bins = edges[:-1]  # Remove the last bin edge
             self._counts = hist
             self.prs = utils.normalize_distribution(hist)
             if self.type == 'integer':
-                self._min = int(self._min)
-                self._max = int(self._max)
+                self.min_ = int(self.min_)
+                self.max_ = int(self.max_)
 
     def counts(self, bins=None, normalize=True):
         """
@@ -300,8 +301,8 @@ class Attribute(AttributePattern, Series):
             'name': self.name,
             'type': self._type,
             'categorical': self.categorical,
-            'min': self._min,
-            'max': self._max,
+            'min': self.min_,
+            'max': self.max_,
             'decimals': self._decimals if self.type == 'float' else None,
             'bins': self.bins.tolist(),
             'prs': self.prs.tolist()
@@ -349,18 +350,18 @@ class Attribute(AttributePattern, Series):
         non-categorical attribute).
         """
         size = size or self.size
-        if self._min == self._max:
-            rands = np.ones(size) * self._min
+        if self.min_ == self.max_:
+            rands = np.ones(size) * self.min_
         else:
-            rands = np.arange(self._min, self._max,
-                              (self._max - self._min) / size)
+            rands = np.arange(self.min_, self.max_,
+                              (self.max_ - self.min_) / size)
 
         np.random.shuffle(rands)
         if self._type == 'string':
-            if self._min == self._max:
-                length = self._min
+            if self.min_ == self.max_:
+                length = self.min_
             else:
-                length = np.random.randint(self._min, self._max)
+                length = np.random.randint(self.min_, self.max_)
             vectorized = np.vectorize(lambda x: utils.randomize_string(length))
             rands = vectorized(rands)
         elif self._type == 'integer':
@@ -378,7 +379,7 @@ class Attribute(AttributePattern, Series):
         if index < length - 1:
             return uniform(self.bins[index], self.bins[index + 1])
         else:
-            return uniform(self.bins[-1], self._max)
+            return uniform(self.bins[-1], self.max_)
 
     def choice(self, size=None, indexes=None):
         """
@@ -437,7 +438,7 @@ class Attribute(AttributePattern, Series):
 
         if self.type != 'string':
             return data.apply(lambda v:  # 1e-8 is a small delta
-                              int((v - self._min) / (self._step + 1e-8))
+                              int((v - self.min_) / (self._step + 1e-8))
                               / self._bin_size)
         else:
             raise ValueError('Non-categorical attribute does not need encode '

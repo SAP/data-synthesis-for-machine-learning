@@ -35,7 +35,7 @@ def main():
                             '(default null values are from pandas.read_csv)')
     group.add_argument('-o', '--output', metavar='FILE',
                        help="set the file name of output synthesized dataset ("
-                            "default is input file name with suffix '-a')")
+                            "default is input file name with suffix '-a.csv')")
     group.add_argument('--no-header', action='store_true',
                        help='indicate there is no header in a CSV file, and '
                             'will take [#0, #1, #2, ...] as header. (default: '

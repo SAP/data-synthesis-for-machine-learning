@@ -41,7 +41,6 @@ def test_encode_partly():
 
 
 def test_encode_empty_column():
-    from pandas import DataFrame
     from numpy import array_equal
     data = [[1001, 'A', 'Female'],
             [1002, 'B', 'Male'],

@@ -25,7 +25,7 @@ def test_error_rate():
     # 0 0 1
     # 1 0 2
     assert isclose(error_rate(y_true, y_pred), 0.3333)
-    for i in range(10):
+    for _ in range(10):
         y_true = randint(0, 20, 100)
         y_pred = randint(0, 20, 100)
         assert isclose(error_rate(y_true, y_pred),
@@ -38,7 +38,7 @@ def test_relative_error():
     b = array([1, 1, 0])
     assert relative_error(a, b) == 0.3333
 
-    for i in range(10):
+    for _ in range(10):
         size = random.randint(5, 100)
         x = random.choice(20, size)
         y = random.choice(20, size)

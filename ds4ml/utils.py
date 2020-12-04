@@ -112,7 +112,6 @@ def str_to_list(val, separator=','):
 
 
 def _compress_svg_data(svg: str):
-    import re
     value = re.sub(r'\n', ' ', svg)
     value = re.sub(r' {2,}', ' ', value)
     value = re.sub(r'<style type="text/css">.*</style>', '', value)
