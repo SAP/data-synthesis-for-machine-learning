@@ -2,7 +2,6 @@
 """
 Algorithms to synthesize data set: currently differential privacy
 """
-import logging
 import warnings
 import numpy as np
 
@@ -11,8 +10,6 @@ from pandas import DataFrame, merge
 from scipy.optimize import fsolve
 
 from ds4ml.utils import mutual_information, normalize_distribution
-
-logger = logging.getLogger(__name__)
 
 
 # -----------------------------------------------------------------------------

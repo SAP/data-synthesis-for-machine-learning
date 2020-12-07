@@ -35,6 +35,7 @@ class AttributePattern:
     # probability distribution (pr)
     bins = None
     prs = None
+    _counts = None
     _pattern_generated = False
 
     # Here _bin_size is int-typed (to show the size of histogram bins), which
@@ -87,18 +88,18 @@ class Attribute(AttributePattern, Series):
         # fill the missing values with the most frequent value
         self.fillna(self.mode()[0], inplace=True)
 
-        # special handling for datetime attribute
-        if self._type == 'datetime':
-            self.update(self.map(self._to_seconds).map(self._date_formatter))
+        # for datetime attribute is converted to seconds since Unix epoch time
+        if self.type == 'datetime':
+            self.update(self.map(self._to_seconds))
 
-        if self._type == 'float':
+        if self.type == 'float':
             self._decimals = self.decimals()
 
         # The `categorical` option can be set to true when the attribute is
         # string-typed and all values are not unique, and its value can be
         # overrode by user.
         self.categorical = self.categorical or (
-            self._type == 'string' and not self.is_unique)
+            self.type == 'string' and not self.is_unique)
         self._set_domain()
         self._set_distribution()
 
@@ -157,6 +158,10 @@ class Attribute(AttributePattern, Series):
             return self.bins
         return [self.min_, self.max_]
 
+    def _step(self):
+        """ Return step for numerical or datetime attribute. """
+        return (self.max_ - self.min_) / self._bin_size
+
     @domain.setter
     def domain(self, domain: list):
         """
@@ -183,7 +188,6 @@ class Attribute(AttributePattern, Series):
             self.bins = np.array(domain)
         elif self.is_numerical:
             self.min_, self.max_ = domain
-            self._step = (self.max_ - self.min_) / self._bin_size
             self.bins = np.array([self.min_, self.max_])
         elif self._type == 'string':
             lengths = [len(str(i)) for i in domain]
@@ -195,31 +199,25 @@ class Attribute(AttributePattern, Series):
         """
         Compute domain (min, max, distribution bins) from input data
         """
+        if self.categorical:
+            self.bins = self.unique()
+
         if self._type == 'string':
-            self._items = self.astype(str).map(len)
-            self.min_ = int(self._items.min())
-            self.max_ = int(self._items.max())
-            if self.categorical:
-                self.bins = self.unique()
-            else:
+            items = self.astype(str).map(len)
+            self.min_ = int(items.min())
+            self.max_ = int(items.max())
+            if not self.categorical:
                 self.bins = np.array([self.min_, self.max_])
         elif self._type == 'datetime':
-            self.update(self.map(self._to_seconds))
-            if self.categorical:
-                self.bins = self.unique()
-            else:
+            if not self.categorical:
                 self.min_ = float(self.min())
                 self.max_ = float(self.max())
                 self.bins = np.array([self.min_, self.max_])
-                self._step = (self.max_ - self.min_) / self._bin_size
         else:
             self.min_ = float(self.min())
             self.max_ = float(self.max())
-            if self.categorical:
-                self.bins = self.unique()
-            else:
+            if not self.categorical:
                 self.bins = np.array([self.min_, self.max_])
-                self._step = (self.max_ - self.min_) / self._bin_size
 
     def _set_distribution(self):
         if self.categorical:
@@ -236,7 +234,7 @@ class Attribute(AttributePattern, Series):
             # Note: hist, edges = numpy.histogram(), all but the last bin
             # is half-open. If bins is 20, then len(hist)=20, len(edges)=21
             if self.type == 'string':
-                hist, edges = np.histogram(self._items,
+                hist, edges = np.histogram(self.astype(str).map(len),
                                            bins=self._bin_size)
             else:
                 hist, edges = np.histogram(self, bins=self._bin_size,
@@ -313,13 +311,13 @@ class Attribute(AttributePattern, Series):
             value = str(value)
             return len(value) - value.rindex('.') - 1
 
-        vc = self.map(decimals_of).value_counts()
+        counts = self.map(decimals_of).value_counts()
         slot = 0
-        for i in range(len(vc)):
-            if sum(vc.head(i + 1)) / sum(vc) > 0.8:
+        for i in range(len(counts)):
+            if sum(counts.head(i + 1)) / sum(counts) > 0.8:
                 slot = i + 1
                 break
-        return max(vc.index[:slot])
+        return max(counts.index[:slot])
 
     def pseudonymize(self, size=None):
         """
@@ -349,8 +347,7 @@ class Attribute(AttributePattern, Series):
         if self.min_ == self.max_:
             rands = np.ones(size) * self.min_
         else:
-            rands = np.arange(self.min_, self.max_,
-                              (self.max_ - self.min_) / size)
+            rands = np.arange(self.min_, self.max_, (self.max_-self.min_)/size)
 
         np.random.shuffle(rands)
         if self.type == 'string':
@@ -394,7 +391,7 @@ class Attribute(AttributePattern, Series):
             size = size or self.size
             indexes = Series(np.random.choice(len(self.prs),
                                               size=size, p=self.prs))
-        column = indexes.map(lambda x: self._random_sample_at(x))
+        column = indexes.map(self._random_sample_at)
         if self.type == 'datetime':
             if not self.categorical:
                 column = column.map(self._date_formatter)
@@ -432,7 +429,8 @@ class Attribute(AttributePattern, Series):
             return frame
 
         if self.type != 'string':
+            step = self._step()
             return data.apply(lambda v:  # 1e-8 is a small delta
-                              int((v - self.min_) / (self._step + 1e-8))
+                              int((v - self.min_) / (step + 1e-8))
                               / self._bin_size)
         raise ValueError('Can\'t encode Non-categorical attribute.')

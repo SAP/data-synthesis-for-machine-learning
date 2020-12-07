@@ -8,7 +8,6 @@ Utility functions for data synthesis. Including:
 """
 import argparse
 import csv
-import logging
 import numpy as np
 import os
 import re
@@ -16,8 +15,6 @@ import hashlib
 
 from string import ascii_lowercase
 from pandas import Series, DataFrame
-
-logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------
@@ -363,7 +360,6 @@ def plot_heatmap(data, title='', otype='string', path=None, cmap='Blues'):
 def train_and_predict(x_train, y_train, x_test):
     """
     Predict <x, y> by SVM classifier, and compare with test data
-    TODO: do some analysis and then choose svm classifier and its parameters
     """
     from sklearn.svm import SVC
     classifier = SVC(gamma='scale')

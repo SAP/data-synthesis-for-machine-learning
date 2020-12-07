@@ -2,7 +2,7 @@
 BiFrame for data synthesis.
 """
 
-import logging
+import warnings
 import numpy as np
 import pandas as pd
 
@@ -13,8 +13,6 @@ from sklearn.metrics import confusion_matrix
 from ds4ml.dataset import DataSet
 from ds4ml.utils import train_and_predict, normalize_range
 from ds4ml.metrics import jensen_shannon_divergence, relative_error
-
-logger = logging.getLogger(__name__)
 
 
 def split_feature_class(label: str, frame: pd.DataFrame):
@@ -40,7 +38,7 @@ def split_feature_class(label: str, frame: pd.DataFrame):
 
 class BiFrame:
     def __init__(self, first: pd.DataFrame, second: pd.DataFrame,
-                 categories=[]):
+                 categories=None):
         """
         BiFrame class that contains two data sets, which currently provides
         kinds of analysis methods from distribution, correlation, and some
@@ -64,9 +62,9 @@ class BiFrame:
         # not, compare them on their common columns.
         cols = set(first.columns) & set(second.columns)
         if len(cols) != len(first.columns) or len(cols) != len(second.columns):
-            logger.info(f"BiFrame works on columns: {cols}.")
+            warnings.warn(f"The evaluator works on the common columns: {cols}.")
 
-        # left and right data set (ds)
+        categories = [] if categories is None else categories
         self.fst = DataSet(first[cols], categories=categories)
         self.snd = DataSet(second[cols], categories=categories)
         self._columns = sorted(cols)
@@ -77,17 +75,19 @@ class BiFrame:
             # If current column is not categorical, will ignore it.
             if not self.fst[col].categorical or not self.snd[col].categorical:
                 continue
-            d1, d2 = self.fst[col].domain, self.snd[col].domain
-            if not np.array_equal(d1, d2):
+            fst_domain, snd_domain = self.fst[col].domain, self.snd[col].domain
+            if not np.array_equal(fst_domain, snd_domain):
                 if self.fst[col].categorical:
-                    domain = np.unique(np.concatenate((d1, d2)))
+                    domain = np.unique(np.concatenate((fst_domain, snd_domain)))
                 else:
-                    domain = [min(d1[0], d2[0]), max(d1[1], d2[1])]
+                    domain = [min(fst_domain[0], snd_domain[0]),
+                              max(fst_domain[1], snd_domain[1])]
                 self.fst[col].domain = domain
                 self.snd[col].domain = domain
 
     @property
     def columns(self):
+        """ Return the common columns of two datasets. """
         return self._columns
 
     def err(self):
@@ -133,19 +133,19 @@ class BiFrame:
             raise ValueError(f"{column} is not in current dataset.")
         if self.fst[column].categorical:
             bins = self.fst[column].domain
-            counts1 = self.fst[column].counts(bins=bins)
-            counts2 = self.snd[column].counts(bins=bins)
+            fst_counts = self.fst[column].counts(bins=bins)
+            snd_counts = self.snd[column].counts(bins=bins)
         else:
             min_, max_ = self.fst[column].domain
             # the domain from two data set are same;
             # extend the domain to human-readable range
             bins = normalize_range(min_, max_ + 1)
-            counts1 = self.fst[column].counts(bins=bins)
-            counts2 = self.snd[column].counts(bins=bins)
+            fst_counts = self.fst[column].counts(bins=bins)
+            snd_counts = self.snd[column].counts(bins=bins)
             # Note: index, value of np.histogram has different length
             bins = bins[:-1]
         # stack arrays vertically
-        return bins, np.vstack((counts1, counts2))
+        return bins, np.vstack((fst_counts, snd_counts))
 
     def describe(self):
         """
@@ -154,9 +154,9 @@ class BiFrame:
         Return a panda.DataFrame, whose columns are two dataset's columns, and
         indexes are a array of metrics, e.g. ['err', 'jsd'].
         """
-        df1 = self.err()
-        df2 = self.jsd()
-        return pd.concat([df1, df2])
+        err_frame = self.err()
+        jsd_frame = self.jsd()
+        return pd.concat([err_frame, jsd_frame])
 
     def classify(self, label: str, test: pd.DataFrame = None):
         """
@@ -193,9 +193,11 @@ class BiFrame:
             fst_train = self.fst
             snd_train = self.snd
 
-        fst_train_x, fst_train_y = split_feature_class(label, self.fst.encode(data=fst_train))
+        fst_train_x, fst_train_y = split_feature_class(label, self.fst.encode(
+            data=fst_train))
+        snd_train_x, snd_train_y = split_feature_class(label, self.fst.encode(
+            data=snd_train))
         test_x, test_y = split_feature_class(label, self.fst.encode(data=test))
-        snd_train_x, snd_train_y = split_feature_class(label, self.fst.encode(data=snd_train))
 
         # construct svm classifier, and predict on the same test dataset
         fst_predict_y = train_and_predict(fst_train_x, fst_train_y, test_x)
@@ -278,9 +280,10 @@ class BiFrame:
                 svms.append({'column': col, 'path': path})
             else:
                 # If not, will compare two predicted result.
-                cm = self.classify(col, test=test)
+                matrix = self.classify(col, test=test)
                 # make path's type: 1-tuple
-                path = (plot_confusion_matrix(cm, xlabel='synth', ylabel='raw'))
+                path = (plot_confusion_matrix(matrix,
+                                              xlabel='synth', ylabel='raw'))
                 svms.append({'column': col, 'path': path})
         return svms
 
@@ -310,9 +313,9 @@ class BiFrame:
         """ return the pair-wise correlation """
         from ds4ml.utils import plot_heatmap
         corrs = []
-        source_mi, target_mi = self.corr()
-        source_svg = plot_heatmap(source_mi)
-        target_svg = plot_heatmap(target_mi)
-        corrs.append({'matrix': source_mi.to_dict('split'), 'path': source_svg})
-        corrs.append({'matrix': target_mi.to_dict('split'), 'path': target_svg})
+        fst_mi, snd_mi = self.corr()
+        fst_svg = plot_heatmap(fst_mi)
+        snd_svg = plot_heatmap(snd_mi)
+        corrs.append({'matrix': fst_mi.to_dict('split'), 'path': fst_svg})
+        corrs.append({'matrix': snd_mi.to_dict('split'), 'path': snd_svg})
         return corrs
