@@ -1,6 +1,7 @@
 
 from pandas import DataFrame
-from ds4ml.evaluator import BiFrame
+from ds4ml.evaluator import BiFrame, split_feature_class
+from ds4ml.dataset import DataSet
 from numpy import array_equal
 
 from .testdata import adults01, adults02
@@ -39,6 +40,26 @@ def test_describe():
     assert array_equal(desc.index, ['err', 'jsd'])
 
 
+def test_split_feature_class():
+    frame = DataSet(adults01[['age', 'relationship', 'salary']].head(10)).encode()
+    features1, class1 = split_feature_class('birth', frame)
+    assert features1.equals(frame)
+    assert class1 is None
+
+    features2, class2 = split_feature_class('age', frame)
+    assert features2.equals(frame)
+    assert class2 is None
+
+    features3, class3 = split_feature_class('salary', frame)
+    assert len(features3.columns) == 4
+    assert class3.name == 'salary_>50K'
+
+    features4, class4 = split_feature_class('relationship', frame)
+    assert len(features4.columns) == 3
+    assert class4.min() == 0
+    assert class4.max() == 2
+
+
 def test_classify_one_class():
     frame = BiFrame(DataFrame(adults01), DataFrame(adults02))
     matrix = frame.classify('salary')
@@ -62,7 +83,7 @@ def test_classify_multiple_classes():
 def test_to_html():
     frame = BiFrame(DataFrame(adults01), DataFrame(adults02))
     report = 'a.html'
-    frame.to_html(report, classifier='SVM', labels=['education'])
+    frame.to_html(report, labels=['education'])
     import os.path
     assert os.path.isfile(report)
     if os.path.exists(report):

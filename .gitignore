@@ -17,3 +17,6 @@ dist/
 *.egg-info/**/*
 
 *.csv
+*.html
+*.py
+*.json

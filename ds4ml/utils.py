@@ -8,15 +8,13 @@ Utility functions for data synthesis. Including:
 """
 import argparse
 import csv
-import logging
 import numpy as np
 import os
+import re
 import hashlib
 
 from string import ascii_lowercase
 from pandas import Series, DataFrame
-
-logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------
@@ -43,6 +41,10 @@ def has_header(path, encoding='utf-8', sep=','):
     # TODO how about categorical columns
     _offset_stream()
     return tuple(df0.dtypes) != tuple(df1.dtypes)
+
+
+def ends_with_json(path):
+    return re.match(r".+\.json", path, re.IGNORECASE) is not None
 
 
 def read_data_from_csv(path, na_values=None, header=None, sep=","):
@@ -107,7 +109,6 @@ def str_to_list(val, separator=','):
 
 
 def _compress_svg_data(svg: str):
-    import re
     value = re.sub(r'\n', ' ', svg)
     value = re.sub(r' {2,}', ' ', value)
     value = re.sub(r'<style type="text/css">.*</style>', '', value)
@@ -359,7 +360,6 @@ def plot_heatmap(data, title='', otype='string', path=None, cmap='Blues'):
 def train_and_predict(x_train, y_train, x_test):
     """
     Predict <x, y> by SVM classifier, and compare with test data
-    TODO: do some analysis and then choose svm classifier and its parameters
     """
     from sklearn.svm import SVC
     classifier = SVC(gamma='scale')

@@ -1,27 +1,66 @@
 """
 Attribute: data structure for 1-dimensional cross-sectional data
+
+This class only handle integer, float, string, datetime columns, and it can be
+labeled as categorical column.
 """
-
-import numpy as np
-
 from bisect import bisect_right
 from random import uniform
 from pandas import Series, DataFrame
 from dateutil.parser import parse
 from datetime import datetime, timedelta
 
-import ds4ml
+import numpy as np
+
 from ds4ml import utils
 
 
-class Attribute(Series):
+# Default environment variables for data processing and analysis
+DEFAULT_BIN_SIZE = 20
+
+
+class AttributePattern:
+    """
+    A helper class of ``Attribute`` to store its patterns.
+    """
+    # _type: date type for handle different kinds of attributes in data
+    # synthesis, only support: integer, float, string, datetime.
+    _type = None
+    categorical = False
+    # min, max has been defined as member function of pandas.Series
+    min_ = None
+    max_ = None
+    _decimals = None
+
+    # probability distribution (pr)
+    bins = None
+    prs = None
+    _counts = None
+    _pattern_generated = False
+
+    # Here _bin_size is int-typed (to show the size of histogram bins), which
+    # is different from bins in np.histogram.
+    _bin_size = DEFAULT_BIN_SIZE
+
+    @property
+    def type(self):
+        return self._type
+
+
+class Attribute(AttributePattern, Series):
 
     _epoch = datetime(1970, 1, 1)  # for datetime handling
 
-    def __init__(self, data, name=None, dtype=None, index=None, copy=False,
-                 fastpath=False, categorical=False):
+    def __init__(self, *args, **kwargs):
         """
-        A Series with extra information, e.g. categorical.
+        An improved Series with extra pattern information, e.g. categorical,
+        min/max value, and probability distribution.
+
+        The ``Attribute`` class has two modes:
+
+        - it has raw data, and then can calculate its pattern from the data;
+
+        - it doesn't have raw data, and only have the pattern from customer.
 
         Parameters
         ----------
@@ -30,46 +69,37 @@ class Attribute(Series):
             takes on a limited and fixed number of possible values. Examples:
             blood type, gender.
         """
-        Series.__init__(self, data, name=name, dtype=dtype, index=index,
-                        copy=copy, fastpath=fastpath)
+        categorical = kwargs.pop('categorical', False)
+        super().__init__(*args, **kwargs)
+        self.set_pattern(categorical=categorical)
 
-        # bins can be int (size of histogram bins), str (as algorithm name),
-        self._bins = ds4ml.params['attribute.bins']
-
-        self._min = None
-        self._max = None
-        self._step = None
-
-        # probability distribution (pr)
-        self.bins = None
-        self.prs = None
-
+    def _calculate_pattern(self):
         from pandas.api.types import infer_dtype
-        # atype: date type for handle different kinds of attributes in data
-        # synthesis, support: integer, float, string, datetime.
-        self.atype = infer_dtype(self, skipna=True)
-        if self.atype == 'integer':
+        self._type = infer_dtype(self, skipna=True)
+        if self._type == 'integer':
             pass
-        elif self.atype == 'floating' or self.atype == 'mixed-integer-float':
-            self.atype = 'float'
-        elif self.atype in ['string', 'mixed-integer', 'mixed']:
-            self.atype = 'string'
+        elif self._type == 'floating' or self._type == 'mixed-integer-float':
+            self._type = 'float'
+        elif self._type in ['string', 'mixed-integer', 'mixed']:
+            self._type = 'string'
             if all(map(utils.is_datetime, self._values)):
-                self.atype = 'datetime'
+                self._type = 'datetime'
 
         # fill the missing values with the most frequent value
         self.fillna(self.mode()[0], inplace=True)
 
-        # special handling for datetime attribute
-        if self.atype == 'datetime':
-            self.update(self.map(self._to_seconds).map(self._date_formatter))
+        # for datetime attribute is converted to seconds since Unix epoch time
+        if self.type == 'datetime':
+            self.update(self.map(self._to_seconds))
 
-        if self.atype == 'float':
+        if self.type == 'float':
             self._decimals = self.decimals()
 
-        # how to define the attribute is categorical.
-        self.categorical = categorical or (
-                self.atype == 'string' and not self.is_unique)
+        # The `categorical` option can be set to true when the attribute is
+        # string-typed and all values are not unique, and its value can be
+        # overrode by user.
+        self.categorical = self.categorical or (
+            self.type == 'string' and not self.is_unique)
         self._set_domain()
         self._set_distribution()
 
@@ -91,9 +121,31 @@ class Attribute(Series):
         from ds4ml.dataset import DataSet
         return DataSet
 
+    def set_pattern(self, pattern=None, **kwargs):
+        """
+        Set an attribute's pattern, including its type, min/max value, and
+        probability distributions.
+        If patter is None, then calculation its pattern from its data.
+        """
+        if not self._pattern_generated:
+            self.categorical = kwargs.pop("categorical", False)
+            if pattern is None:
+                # to calculate the pattern use its data
+                self._calculate_pattern()
+            else:
+                self._type = pattern['type']
+                if self.type == 'float':
+                    self._decimals = pattern['decimals']
+                self.categorical = pattern['categorical']
+                self.min_ = pattern['min']
+                self.max_ = pattern['max']
+                self.bins = np.array(pattern['bins'])
+                self.prs = np.array(pattern['prs'])
+            self._pattern_generated = True
+
     @property
     def is_numerical(self):
-        return self.atype == 'integer' or self.atype == 'float'
+        return self._type == 'integer' or self._type == 'float'
 
     @property
     def domain(self):
@@ -104,8 +156,11 @@ class Attribute(Series):
         """
         if self.categorical:
             return self.bins
-        else:
-            return [self._min, self._max]
+        return [self.min_, self.max_]
+
+    def _step(self):
+        """ Return step for numerical or datetime attribute. """
+        return (self.max_ - self.min_) / self._bin_size
 
     @domain.setter
     def domain(self, domain: list):
@@ -125,21 +180,18 @@ class Attribute(Series):
         """
         # if a attribute is numerical and categorical and domain's length is
         # bigger than 2, take it as categorical. e.g. zip code.
-        if self.atype == 'datetime':
+        if self.type == 'datetime':
             domain = list(map(self._to_seconds, domain))
         if (self.is_numerical and self.categorical and len(domain) > 2) or (
                 self.categorical):
-            self._min = min(domain)
-            self._max = max(domain)
+            self.min_, self.max_ = min(domain), max(domain)
             self.bins = np.array(domain)
         elif self.is_numerical:
-            self._min, self._max = domain
-            self._step = (self._max - self._min) / self._bins
-            self.bins = np.array([self._min, self._max])
-        elif self.atype == 'string':
+            self.min_, self.max_ = domain
+            self.bins = np.array([self.min_, self.max_])
+        elif self._type == 'string':
             lengths = [len(str(i)) for i in domain]
-            self._min = min(lengths)
-            self._max = max(lengths)
+            self.min_, self.max_ = min(lengths), max(lengths)
             self.bins = np.array(domain)
         self._set_distribution()
 
@@ -147,31 +199,25 @@ class Attribute(Series):
         """
         Compute domain (min, max, distribution bins) from input data
         """
-        if self.atype == 'string':
-            self._items = self.astype(str).map(len)
-            self._min = int(self._items.min())
-            self._max = int(self._items.max())
-            if self.categorical:
-                self.bins = self.unique()
-            else:
-                self.bins = np.array([self._min, self._max])
-        elif self.atype == 'datetime':
-            self.update(self.map(self._to_seconds))
-            if self.categorical:
-                self.bins = self.unique()
-            else:
-                self._min = float(self.min())
-                self._max = float(self.max())
-                self.bins = np.array([self._min, self._max])
-                self._step = (self._max - self._min) / self._bins
+        if self.categorical:
+            self.bins = self.unique()
+
+        if self._type == 'string':
+            items = self.astype(str).map(len)
+            self.min_ = int(items.min())
+            self.max_ = int(items.max())
+            if not self.categorical:
+                self.bins = np.array([self.min_, self.max_])
+        elif self._type == 'datetime':
+            if not self.categorical:
+                self.min_ = float(self.min())
+                self.max_ = float(self.max())
+                self.bins = np.array([self.min_, self.max_])
         else:
-            self._min = float(self.min())
-            self._max = float(self.max())
-            if self.categorical:
-                self.bins = self.unique()
-            else:
-                self.bins = np.array([self._min, self._max])
-                self._step = (self._max - self._min) / self._bins
+            self.min_ = float(self.min())
+            self.max_ = float(self.max())
+            if not self.categorical:
+                self.bins = np.array([self.min_, self.max_])
 
     def _set_distribution(self):
         if self.categorical:
@@ -179,7 +225,7 @@ class Attribute(Series):
             for value in set(self.bins) - set(counts.index):
                 counts[value] = 0
             counts.sort_index(inplace=True)
-            if self.atype == 'datetime':
+            if self.type == 'datetime':
                 counts.index = list(map(self._date_formatter, counts.index))
             self._counts = counts.values
             self.prs = utils.normalize_distribution(counts)
@@ -187,18 +233,18 @@ class Attribute(Series):
         else:
             # Note: hist, edges = numpy.histogram(), all but the last bin
             # is half-open. If bins is 20, then len(hist)=20, len(edges)=21
-            if self.atype == 'string':
-                hist, edges = np.histogram(self._items,
-                                           bins=self._bins)
+            if self.type == 'string':
+                hist, edges = np.histogram(self.astype(str).map(len),
+                                           bins=self._bin_size)
             else:
-                hist, edges = np.histogram(self, bins=self._bins,
-                                           range=(self._min, self._max))
+                hist, edges = np.histogram(self, bins=self._bin_size,
+                                           range=(self.min_, self.max_))
             self.bins = edges[:-1]  # Remove the last bin edge
             self._counts = hist
             self.prs = utils.normalize_distribution(hist)
-            if self.atype == 'integer':
-                self._min = int(self._min)
-                self._max = int(self._max)
+            if self.type == 'integer':
+                self.min_ = int(self.min_)
+                self.max_ = int(self.max_)
 
     def counts(self, bins=None, normalize=True):
         """
@@ -210,7 +256,7 @@ class Attribute(Series):
         if bins is None:
             return self._counts
         if self.categorical:
-            if self.atype == 'datetime':
+            if self.type == 'datetime':
                 bins = list(map(self._to_seconds, bins))
             counts = self.value_counts()
             for value in set(bins) - set(counts.index):
@@ -218,16 +264,14 @@ class Attribute(Series):
             if normalize:
                 return np.array([round(counts.get(b)/sum(counts) * 100, 2)
                                  for b in bins])
-            else:
-                return np.array([counts.get(b) for b in bins])
-        else:
-            if len(bins) == 1:
-                return np.array([self.size])
-            hist, _ = np.histogram(self, bins=bins)
-            if normalize:
-                return (hist / hist.sum() * 100).round(2)
-            else:
-                return hist
+            return np.array([counts.get(b) for b in bins])
+
+        if len(bins) == 1:
+            return np.array([self.size])
+        hist, _ = np.histogram(self, bins=bins)
+        if normalize:
+            return (hist / hist.sum() * 100).round(2)
+        return hist
 
     def bin_indexes(self):
         """
@@ -242,93 +286,110 @@ class Attribute(Series):
         indexes.fillna(len(self.bins), inplace=True)
         return indexes.astype(int, copy=False)
 
-    def metadata(self):
+    def to_pattern(self):
         """
         Return attribution's metadata information in JSON format or Python
         dictionary. Usually used in debug and testing.
         """
         return {
             'name': self.name,
-            'dtype': self.dtype,
-            'atype': self.atype,
+            'type': self._type,
             'categorical': self.categorical,
-            'min': self._min,
-            'max': self._max,
+            'min': self.min_,
+            'max': self.max_,
+            'decimals': self._decimals if self.type == 'float' else None,
             'bins': self.bins.tolist(),
             'prs': self.prs.tolist()
         }
 
     def decimals(self):
         """
-        Returns number of decimals places for floating attribute.
+        Returns number of decimals places for floating attribute. Used for
+        generated dataset to keep consistent decimal places for float attribute.
         """
         def decimals_of(value: float):
             value = str(value)
             return len(value) - value.rindex('.') - 1
 
-        vc = self.map(decimals_of).value_counts()
+        counts = self.map(decimals_of).value_counts()
         slot = 0
-        for i in range(len(vc)):
-            if sum(vc.head(i + 1)) / sum(vc) > 0.8:
+        for i in range(len(counts)):
+            if sum(counts.head(i + 1)) / sum(counts) > 0.8:
                 slot = i + 1
                 break
-        return max(vc.index[:slot])
+        return max(counts.index[:slot])
 
-    def pseudonymize(self):
+    def pseudonymize(self, size=None):
         """
         Return pseudonymized values for this attribute, which is used to
         substitute identifiable data with a reversible, consistent value.
         """
+        size = size or self.size
+        if size != self.size:
+            attr = Series(np.random.choice(self.bins, size=size, p=self.prs))
+        else:
+            attr = self
         if self.categorical:
             mapping = {b: utils.pseudonymise_string(b) for b in self.bins}
-            return self.map(lambda x: mapping[x])
+            return attr.map(lambda x: mapping[x])
 
-        if self.atype == 'string':
-            return self.map(utils.pseudonymise_string)
-        elif self.is_numerical or self.atype == 'datetime':
-            return self.map(str).map(utils.pseudonymise_string)
+        if self.type == 'string':
+            return attr.map(utils.pseudonymise_string)
+        elif self.is_numerical or self.type == 'datetime':
+            return attr.map(str).map(utils.pseudonymise_string)
 
     def random(self, size=None):
         """
         Return an random array with same length (usually used for
         non-categorical attribute).
         """
-        if size is None:
-            size = len(self)
-        if self._min == self._max:
-            rands = np.ones(size) * self._min
+        size = size or self.size
+        if self.min_ == self.max_:
+            rands = np.ones(size) * self.min_
         else:
-            rands = np.arange(self._min, self._max,
-                              (self._max - self._min) / size)
+            rands = np.arange(self.min_, self.max_, (self.max_-self.min_)/size)
 
         np.random.shuffle(rands)
-        if self.atype == 'string':
-            if self._min == self._max:
-                length = self._min
+        if self.type == 'string':
+            if self.min_ == self.max_:
+                length = self.min_
             else:
-                length = np.random.randint(self._min, self._max)
+                length = np.random.randint(self.min_, self.max_)
             vectorized = np.vectorize(lambda x: utils.randomize_string(length))
             rands = vectorized(rands)
-        elif self.atype == 'integer':
+        elif self.type == 'integer':
             rands = list(map(int, rands))
-        elif self.atype == 'datetime':
+        elif self.type == 'datetime':
             rands = list(map(self._date_formatter, rands))
         return Series(rands)
 
-    def _sampling_bins(self, index: int):
+    def retain(self, size=None):
+        """ Return retained attribute with the size """
+        size = size or self.size
+        if size < self.size:
+            return self.head(size)
+        if size == self.size:
+            return self
+        copies = size // self.size
+        remainder = size - (copies * self.size)
+
+        return Series(self.tolist() * copies + self.head(remainder).tolist())
+
+    def _random_sample_at(self, index: int):
+        """ Sample a value from distribution bins at position 'index'"""
         if self.categorical:
             return self.bins[index]
 
         length = len(self.bins)
         if index < length - 1:
             return uniform(self.bins[index], self.bins[index + 1])
-        else:
-            return uniform(self.bins[-1], self._max)
+        return uniform(self.bins[-1], self.max_)
 
     def choice(self, size=None, indexes=None):
         """
-        Return a random sample based on this attribute's probability.
-        If indexes and n are both set, ignore n.
+        Return a random sample based on this attribute's probability and
+        distribution bins (default value is base random distribution bins based
+        on its probability).
 
         Parameters
         ----------
@@ -336,22 +397,21 @@ class Attribute(Series):
             size of random sample
 
         indexes : array-like
-            array of indexes in bins
+            array of indexes in distribution bins
         """
         if indexes is None:
-            if size is None:
-                size = len(self)
+            size = size or self.size
             indexes = Series(np.random.choice(len(self.prs),
                                               size=size, p=self.prs))
-        column = indexes.map(lambda x: self._sampling_bins(x))
-        if self.atype == 'datetime':
+        column = indexes.map(self._random_sample_at)
+        if self.type == 'datetime':
             if not self.categorical:
                 column = column.map(self._date_formatter)
-        elif self.atype == 'float':
+        elif self.type == 'float':
             column = column.round(self._decimals)
-        elif self.atype == 'integer':
+        elif self.type == 'integer':
             column = column.round().astype(int)
-        elif self.atype == 'string':
+        elif self.type == 'string':
             if not self.categorical:
                 column = column.map(lambda x: utils.randomize_string(int(x)))
         return column
@@ -368,22 +428,21 @@ class Attribute(Series):
         if data is None:
             data = self.copy()
         else:
-            if self.atype == 'datetime':
+            if self.type == 'datetime':
                 if all(map(utils.is_datetime, data)):
                     data = data.map(self._to_seconds)
                 else:
                     data = data.map(int)
 
         if self.categorical:
-            df = DataFrame()
-            for c in self.bins:
-                df[c] = data.apply(lambda v: 1 if v == c else 0)
-            return df
+            frame = DataFrame()
+            for col in self.bins:
+                frame[col] = data.apply(lambda v: 1 if v == col else 0)
+            return frame
 
-        if self.atype != 'string':
+        if self.type != 'string':
+            step = self._step()
             return data.apply(lambda v:  # 1e-8 is a small delta
-                              int((v - self._min) / (self._step + 1e-8))
-                              / self._bins)
-        else:
-            raise ValueError('Non-categorical attribute does not need encode '
-                             'method.')
+                              int((v - self.min_) / (step + 1e-8))
+                              / self._bin_size)
+        raise ValueError('Can\'t encode Non-categorical attribute.')

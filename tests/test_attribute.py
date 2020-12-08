@@ -13,24 +13,24 @@ size = 30
 def test_integer_attribute():
     ints = random.randint(1, 100, size)
     attr = Attribute(Series(ints), name='ID', categorical=False)
-    assert attr.atype == 'integer'
+    assert attr.type == 'integer'
     assert attr.name == 'ID'
-    assert attr._min >= 1
-    assert attr._max <= 100
+    assert attr.min_ >= 1
+    assert attr.max_ <= 100
     assert len(attr.bins) == 20
     assert isclose(sum(attr.prs), 1.0)
 
     from .testdata import adults01
     attr = Attribute(adults01['age'])
-    assert attr.atype == 'integer'
+    assert attr.type == 'integer'
 
 
 def test_float_attribute():
     floats = random.uniform(1, 100, size)
     attr = Attribute(Series(floats, name='Float'))
-    assert attr.atype == 'float'
-    assert attr._min >= 1
-    assert attr._max <= 100
+    assert attr.type == 'float'
+    assert attr.min_ >= 1
+    assert attr.max_ <= 100
     assert len(attr.bins) == 20
     assert isclose(sum(attr.prs), 1.0)
 
@@ -38,19 +38,19 @@ def test_float_attribute():
 def test_string_attribute():
     strings = list(map(lambda x: randomize_string(5), range(size)))
     attr = Attribute(Series(strings, name='String'), categorical=True)
-    assert attr.atype == 'string'
-    assert attr._min == 5
+    assert attr.type == 'string'
+    assert attr.min_ == 5
     assert attr.categorical
 
 
 def test_set_domain_for_integer_attribute():
     ints = random.randint(1, 100, size)
     attr = Attribute(Series(ints, name='Integer'))
-    assert attr._min >= 1
-    assert attr._max <= 100
+    assert attr.min_ >= 1
+    assert attr.max_ <= 100
     attr.domain = [-2, 120]
-    assert attr._min == -2
-    assert attr._max == 120
+    assert attr.min_ == -2
+    assert attr.max_ == 120
 
 
 def test_set_domain_for_integer_categorical_attribute():
@@ -66,11 +66,11 @@ def test_set_domain_for_integer_categorical_attribute():
 def test_set_domain_for_float_attribute():
     floats = random.uniform(1, 100, size)
     attr = Attribute(Series(floats, name='Float'))
-    assert attr._min >= 1
-    assert attr._max <= 100
+    assert attr.min_ >= 1
+    assert attr.max_ <= 100
     attr.domain = [-2, 120]
-    assert attr._min == -2
-    assert attr._max == 120
+    assert attr.min_ == -2
+    assert attr.max_ == 120
 
 
 def test_set_domain_for_string_attribute():
@@ -209,7 +209,7 @@ def test_pseudonymize_floats():
                        pseudonyms.value_counts().values)
 
 
-def test_to_pseudonym_dates():
+def test_pseudonym_dates():
     ints = Series(['07/15/2019', '07/24/2019', '07/23/2019', '07/22/2019',
                    '07/21/2019', '07/22/2019', '07/23/2019', '07/24/2019',
                    '07/23/2019', '07/22/2019', '07/15/2019'])
@@ -240,6 +240,16 @@ def test_random_strings():
     attr = Attribute(Series(strings, name='String'))
     randoms = attr.random()
     assert len(randoms) == size
+
+
+def test_retain_ints():
+    ints = [3, 5, 7, 8, 7, 1, 10, 30, 16, 19]
+    attr = Attribute(ints, name='Integer')
+    retains = attr.retain()
+    assert len(retains) == len(ints)
+
+    retains = attr.retain(size=15)
+    assert array_equal(retains.head(len(ints)).tolist(), ints)
 
 
 def test_encode_numerical_attributes():

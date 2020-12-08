@@ -64,8 +64,8 @@ def error_rate(y_true, y_pred=None):
     else:
         cm = confusion_matrix(y_true, y_pred)
     trace = np.trace(cm)
-    sum = np.sum(cm)
-    return round((sum - trace) / sum, 4)
+    sum_ = np.sum(cm)
+    return round((sum_ - trace) / sum_, 4)
 
 
 def relative_error(x, y):

@@ -77,11 +77,12 @@ def main():
         parser.exit(message=f'--class-label(s): {comp} are not in target file.')
 
     frame = BiFrame(source, target, categories=categories)
-    frame.to_html(buf=args.output, title='Data Utility Evaluation Report',
+    frame.to_html(buffer=args.output, title='Data Utility Evaluation Report',
                   labels=class_labels, test=test)
 
     duration = time.time() - start
-    print(f'Evaluation report: {args.output} in {round(duration, 2)} seconds.')
+    print(f'Evaluate dataset {args.source} and {args.target} and generate '
+          f'report at {args.output} in {round(duration, 2)} seconds.')
 
 
 if __name__ == '__main__':
