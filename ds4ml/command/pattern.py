@@ -34,7 +34,7 @@ def main():
                             '(default null values are from pandas.read_csv)')
     group.add_argument('-o', '--output', metavar='FILE',
                        help="set the file name of anonymous patterns (default "
-                            "is input file name with suffix '-pattern.json')")
+                            "is input file name with a suffix '-pattern.json')")
     group.add_argument('--no-header', action='store_true',
                        help='indicate there is no header in a CSV file, and '
                             'will take [#0, #1, #2, ...] as header. (default: '
@@ -48,8 +48,6 @@ def main():
                        default=0.1)
     group.add_argument('--category', metavar='LIST',
                        help='set categorical columns separated by a comma.')
-    group.add_argument('--retain', metavar='LIST',
-                       help='set columns to retain the values')
 
     args = parser.parse_args()
     start = time.time()
@@ -58,7 +56,6 @@ def main():
     deletes = str_to_list(args.delete)
     categories = str_to_list(args.category)
     na_values = str_to_list(args.na_values)
-    retains = str_to_list(args.retain)
     header = None if args.no_header else 'infer'
     sep = ',' if args.sep is None else args.sep
 
@@ -85,7 +82,7 @@ def main():
         name = file_name(args.file)
         args.output = f'{name}-pattern.json'
     dataset.to_pattern(path=args.output, epsilon=args.epsilon, deletes=deletes,
-                       pseudonyms=pseudonyms, retains=retains)
+                       pseudonyms=pseudonyms, retains=[])
 
     duration = time.time() - start
     print(f'Analyze and serialize the patterns of {args.file} at {args.output} '

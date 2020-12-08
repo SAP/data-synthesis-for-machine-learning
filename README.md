@@ -64,7 +64,7 @@ There are one demo dataset (part of the public dataset from [Adult](https://arch
     --na-values LIST    set additional values to recognize as NA/NaN; (default
                         null values are from pandas.read_csv)
     -o, --output FILE   set the file name of output synthesized dataset
-                        (default is input file name with suffix '_a')
+                        (default is input file name with suffix '-a.csv')
     --no-header         indicate there is no header in a CSV file, and will
                         take [#0, #1, #2, ...] as header. (default: the tool
                         will try to detect and take actions)
@@ -78,8 +78,42 @@ There are one demo dataset (part of the public dataset from [Adult](https://arch
     --retain LIST        set columns to retain the values
   ```
 
-  - Note: argument **epsilon** (ε) defines the privacy guarantee. Its typical values are 0.1 or 0.01. The lower the value of epsilon, the more noise is applied, and the less the utility. 
+  - Note: argument **epsilon** (ε) defines the privacy guarantee, which depends on the size and features of the dataset to be anonymized. The lower the value of epsilon, the more noise is applied, and the less the utility. 
 
+
++ Help of `data-pattern`
+  Run `data-pattern -h`.
+  ```
+  usage: data-pattern [-h] [--pseudonym LIST] [--delete LIST] [--na-values LIST]
+                    [-o FILE] [--no-header] [--sep STRING] [-e FLOAT]
+                    [--category LIST] [--retain LIST]
+                    file
+
+  Serialize patterns of a dataset anonymously
+
+  positional arguments:
+    file                 set path of a csv file to be patterned anonymously
+
+  general arguments:
+    -h, --help           show this help message and exit
+    --pseudonym LIST     set candidate columns separated by a comma, which will
+                         be replaced with a pseudonym. It only works on the
+                         string column.
+    --delete LIST        set columns separated by a comma, which will be deleted
+                         when synthesis.
+    --na-values LIST     set additional values to recognize as NA/NaN; (default
+                         null values are from pandas.read_csv)
+    -o, --output FILE    set the file name of anonymous patterns (default is
+                         input file name with a suffix '-pattern.json')
+    --no-header          indicate there is no header in a CSV file, and will
+                         take [#0, #1, #2, ...] as header. (default: the tool
+                         will try to detect and take actions)
+    --sep STRING         specify the delimiter of the input file
+
+  advanced arguments:
+    -e, --epsilon FLOAT  set epsilon for differential privacy (default 0.1)
+    --category LIST      set categorical columns separated by a comma.
+  ```
 
 + Help of `data-evaluate`
   Run `data-evaluate -h`.
