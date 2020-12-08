@@ -244,7 +244,7 @@ class DataSet(DataSetPattern, DataFrame):
                 frame[col] = attr.pseudonymize(size=records)
                 continue
             if col in retains:
-                frame[col] = attr
+                frame[col] = attr.retain(records)
                 continue
             if col in sampling:
                 frame[col] = attr.choice(indexes=sampling[col])

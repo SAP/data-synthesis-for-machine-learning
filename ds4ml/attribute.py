@@ -363,6 +363,18 @@ class Attribute(AttributePattern, Series):
             rands = list(map(self._date_formatter, rands))
         return Series(rands)
 
+    def retain(self, size=None):
+        """ Return retained attribute with the size """
+        size = size or self.size
+        if size < self.size:
+            return self.head(size)
+        if size == self.size:
+            return self
+        copies = size // self.size
+        remainder = size - (copies * self.size)
+
+        return Series(self.tolist() * copies + self.head(remainder).tolist())
+
     def _random_sample_at(self, index: int):
         """ Sample a value from distribution bins at position 'index'"""
         if self.categorical:

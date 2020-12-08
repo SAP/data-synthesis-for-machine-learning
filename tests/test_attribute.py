@@ -242,6 +242,16 @@ def test_random_strings():
     assert len(randoms) == size
 
 
+def test_retain_ints():
+    ints = [3, 5, 7, 8, 7, 1, 10, 30, 16, 19]
+    attr = Attribute(ints, name='Integer')
+    retains = attr.retain()
+    assert len(retains) == len(ints)
+
+    retains = attr.retain(size=15)
+    assert array_equal(retains.head(len(ints)).tolist(), ints)
+
+
 def test_encode_numerical_attributes():
     from .testdata import adults01
     attr = Attribute(adults01['age'])

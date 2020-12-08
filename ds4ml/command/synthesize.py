@@ -46,7 +46,7 @@ def main():
     group.add_argument('--records', metavar='INT', type=int,
                        help='specify the records you want to generate; default '
                             'is the same records with the original dataset')
-    group.add_argument('--sep', metavar='STRING',
+    group.add_argument('--sep', metavar='STRING', default=',',
                        help='specify the delimiter of the input file')
 
     group = parser.add_argument_group('advanced arguments')
@@ -67,16 +67,18 @@ def main():
     na_values = str_to_list(args.na_values)
     retains = str_to_list(args.retain)
     header = None if args.no_header else 'infer'
-    sep = ',' if args.sep is None else args.sep
 
     # check the file type from its extension
     is_pattern = ends_with_json(args.file)
     if is_pattern:
         # construct DataSet from pattern file
         dataset = DataSet.from_pattern(args.file)
+        if len(retains) != 0:
+            parser.exit(message='Do not support --retain option when '
+                                'synthesize from pattern file.')
     else:
         data = read_data_from_csv(args.file, na_values=na_values, header=header,
-                                  sep=sep)
+                                  sep=args.sep)
 
         def complement(attrs, full):
             return set(attrs or []) - set(full)
