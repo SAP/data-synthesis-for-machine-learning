@@ -23,7 +23,7 @@ ut:
 	pytest
 
 publish:
-	pip3 install 'twine>=1.5.0'
+	pip3 install 'twine>=3.0.0'
 	python3 setup.py sdist bdist_wheel
 	python3 -m twine upload dist/*
 	rm -fr build dist .egg ds4ml.egg-info
