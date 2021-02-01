@@ -71,11 +71,11 @@ def main():
     # check the file type from its extension
     is_pattern = ends_with_json(args.file)
     if is_pattern:
-        # construct DataSet from pattern file
-        dataset = DataSet.from_pattern(args.file)
-        if len(retains) != 0:
+        if retains is not None and len(retains) != 0:
             parser.exit(message='Do not support --retain option when '
                                 'synthesize from pattern file.')
+        # construct DataSet from pattern file
+        dataset = DataSet.from_pattern(args.file)
     else:
         data = read_data_from_csv(args.file, na_values=na_values, header=header,
                                   sep=args.sep)
@@ -105,7 +105,7 @@ def main():
     if args.output is None:
         name = file_name(args.file)
         args.output = f'{name}-a.csv'
-    synthesized.to_csv(args.output, index=False, sep=sep)
+    synthesized.to_csv(args.output, index=False, sep=args.sep)
 
     duration = time.time() - start
     print(f'Synthesize from {args.file} to file {args.output} in '
