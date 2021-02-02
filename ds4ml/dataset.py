@@ -18,8 +18,8 @@ class DataSetPattern:
     _records = None
 
     # Options of DataSet constructor to preset some properties:
-    _categories = []  # categorical columns setting from command lines
-
+    _categories = []    # categorical columns setting from command lines
+    _config = None      # configurations for data-pattern command
     _pattern_generated = False
 
 
@@ -93,6 +93,7 @@ class DataSet(DataSetPattern, DataFrame):
             self._network = pattern['network']
             self._cond_prs = pattern['prs']
             self._attrs = pattern['attrs']
+            self._config = pattern['config']
             self._records = pattern['records']
             self._pattern_generated = True
 
@@ -108,7 +109,6 @@ class DataSet(DataSetPattern, DataFrame):
         """
         # If the data to encode is None, then transform source data _data;
         frame = DataFrame()
-        # for col, attr in self.items():
         for col in self.columns:
             attr = self[col]
             if data is not None and col not in data:
@@ -208,7 +208,9 @@ class DataSet(DataSetPattern, DataFrame):
             epsilon, degree=degree, pseudonyms=pseudonyms, deletes=deletes,
             retains=retains)
         pattern = dict({
-            "attrs": {label: attr.to_pattern() for label, attr in self.items()},
+            "attrs": {col: self[col].to_pattern() for col in self.columns
+                      if col not in (deletes or [])},
+            "config": {"pseudonyms": pseudonyms},
             "network": network,
             "prs": cond_prs,
             "records": self._records
@@ -224,7 +226,8 @@ class DataSet(DataSetPattern, DataFrame):
         private.
         """
         deletes = deletes or []
-        pseudonyms = pseudonyms or []
+        pseudonyms = pseudonyms or (
+                self._config is not None and self._config['pseudonyms']) or []
         retains = retains or []
         if self._network is None and self._cond_prs is None:
             self._network, self._cond_prs = self._construct_bayesian_network(
@@ -235,7 +238,6 @@ class DataSet(DataSetPattern, DataFrame):
         records = records if records is not None else self._records
         sampling = self._sampling_dataset(self._network, self._cond_prs, records)
         frame = DataFrame(columns=columns)
-        # for col, attr in self.items(): # self.items() return Series
         for col in self.columns:
             attr = self[col]
             if col in deletes:

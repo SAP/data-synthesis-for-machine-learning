@@ -86,7 +86,8 @@ class Attribute(AttributePattern, Series):
                 self._type = 'datetime'
 
         # fill the missing values with the most frequent value
-        self.fillna(self.mode()[0], inplace=True)
+        if self.hasnans:
+            self.fillna(self.mode()[0], inplace=True)
 
         # for datetime attribute is converted to seconds since Unix epoch time
         if self.type == 'datetime':
