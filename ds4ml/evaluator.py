@@ -62,21 +62,28 @@ class BiFrame:
         # not, compare them on their common columns.
         cols = set(first.columns) & set(second.columns)
         if len(cols) != len(first.columns) or len(cols) != len(second.columns):
-            warnings.warn(f"The evaluator works on the common columns: {cols}.")
+            warnings.warn("Evaluate on partial columns of the datasets",
+                          stacklevel=2)
 
         categories = [] if categories is None else categories
         self.fst = DataSet(first[cols], categories=categories)
         self.snd = DataSet(second[cols], categories=categories)
-        self._columns = sorted(cols)
 
         # Make sure that two dataset have same domain for categorical
         # attributes, and same min, max values for numerical attributes.
-        for col in self._columns:
+        for col in cols.copy():
             # If current column is not categorical, will ignore it.
             if not self.fst[col].categorical or not self.snd[col].categorical:
                 continue
             fst_domain, snd_domain = self.fst[col].domain, self.snd[col].domain
             if not np.array_equal(fst_domain, snd_domain):
+                # if there is no intersection of two domains, then there may be
+                # zero relationship between the columns.
+                if len(np.intersect1d(fst_domain, snd_domain)) == 0:
+                    self.fst = self.fst.drop(col, axis=1)
+                    self.snd = self.snd.drop(col, axis=1)
+                    cols.remove(col)
+                    continue
                 if self.fst[col].categorical:
                     domain = np.unique(np.concatenate((fst_domain, snd_domain)))
                 else:
@@ -84,6 +91,7 @@ class BiFrame:
                               max(fst_domain[1], snd_domain[1])]
                 self.fst[col].domain = domain
                 self.snd[col].domain = domain
+        self._columns = sorted(cols)
 
     @property
     def columns(self):

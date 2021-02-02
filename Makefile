@@ -14,10 +14,16 @@ init:
 	pip3 install -r requirements.txt
 
 it:
-	PYTHONPATH=. python3 ./ds4ml/command/synthesize.py example/adult.csv -o adult-a.csv
-	PYTHONPATH=. python3 ./ds4ml/command/pattern.py example/adult.csv -o adult-pattern.json
-	PYTHONPATH=. python3 ./ds4ml/command/synthesize.py adult-pattern.json --records 8141 -o adult-pattern.csv
-	PYTHONPATH=. python3 ./ds4ml/command/evaluate.py adult-a.csv adult-pattern.csv -o report.html
+	@echo "==> Integration testing on parameters of command/synthesize.py"
+	PYTHONPATH=. python3 ./ds4ml/command/synthesize.py example/adult.csv -e 0.01 --category workclass --pseudonym marital-status --delete native-country --records 8145 -o adult-a1.csv
+	PYTHONPATH=. python3 ./ds4ml/command/pattern.py example/adult.csv -o adult-p1.json
+	PYTHONPATH=. python3 ./ds4ml/command/synthesize.py adult-p1.json -o adult-b1.csv
+	PYTHONPATH=. python3 ./ds4ml/command/evaluate.py adult-a1.csv adult-b1.csv --class-label salary -o report-1.html
+	@echo "==> Integration testing on parameters of command/pattern.py"
+	PYTHONPATH=. python3 ./ds4ml/command/synthesize.py example/adult.csv -o adult-a2.csv
+	PYTHONPATH=. python3 ./ds4ml/command/pattern.py example/adult.csv -e 0.01 --category workclass --pseudonym marital-status --delete native-country -o adult-p2.json
+	PYTHONPATH=. python3 ./ds4ml/command/synthesize.py adult-p2.json --records 8145 -o adult-b2.csv
+	PYTHONPATH=. python3 ./ds4ml/command/evaluate.py adult-a2.csv adult-b2.csv --class-label salary -o report-2.html
 
 ut:
 	pytest
