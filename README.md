@@ -5,6 +5,8 @@ This public repository is read-only and no longer maintained.
 
 # Data Synthesis for Machine Learning
 
+[![REUSE status](https://api.reuse.software/badge/github.com/SAP/data-synthesis-for-machine-learning)](https://api.reuse.software/info/github.com/SAP/data-synthesis-for-machine-learning)
+
 ## Overview
 The recent enforcement of data privacy protection regulations, such as GDPR, has made data sharing more difficult. This tool intends to facilitate data sharing from a customer by synthesizing a dataset based on the original dataset for later machine learning. 
 There are two parts to this tool:
@@ -159,3 +161,7 @@ If you encounter an issue, you can open an issue in GitHub.
 
 ## Contribute
 Please check our [Contribution Guidelines](/CONTRIBUTING.md).
+
+## Licensing
+
+Copyright 2019-2021 SAP SE or an SAP affiliate company and data-synthesis-for-machine-learning contributors. Please see our [LICENSE](LICENSE) for copyright and license information. Detailed information including third-party components and their licensing/copyright information is available [via the REUSE tool](https://api.reuse.software/info/github.com/SAP/data-synthesis-for-machine-learning).
