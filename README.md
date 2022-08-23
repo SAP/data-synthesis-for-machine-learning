@@ -2,6 +2,8 @@
 
 [![REUSE status](https://api.reuse.software/badge/github.com/SAP/data-synthesis-for-machine-learning)](https://api.reuse.software/info/github.com/SAP/data-synthesis-for-machine-learning)
 
+Note: fork of https://github.com/SAP/data-synthesis-for-machine-learning
+
 ## Overview
 The recent enforcement of data privacy protection regulations, such as GDPR, has made data sharing more difficult. This tool intends to facilitate data sharing from a customer by synthesizing a dataset based on the original dataset for later machine learning. 
 There are two parts to this tool:

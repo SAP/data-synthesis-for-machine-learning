@@ -2,6 +2,8 @@
 DataSet: data structure for potentially mixed-type Attribute.
 """
 
+import json
+
 from pandas import DataFrame, Series
 
 from ds4ml.attribute import Attribute
@@ -11,7 +13,7 @@ class DataSetPattern:
     """
     A helper class of ``DataSet`` to store its patterns.
     """
-    # DataSet's pattern data has following members:
+    # DataSet's pattern data has the following members:
     _network = None
     _cond_prs = None
     _attrs = None
@@ -75,17 +77,20 @@ class DataSet(DataSetPattern, DataFrame):
         return result
 
     @classmethod
-    def from_pattern(cls, filename):
+    def from_pattern(cls, pattern: dict):
         """
         Alternate constructor to create a ``DataSet`` from a pattern file.
         """
-        import json
-        with open(filename) as f:
-            pattern = json.load(f)
         # set columns to DataSet, which will set column name to each Attribute.
         columns = pattern['attrs'].keys()
         dataset = DataSet(columns=columns, pattern=pattern)
         return dataset
+
+    @classmethod
+    def from_pattern_file(cls, filename):
+        with open(filename) as f:
+            pattern = json.load(f)
+        return cls.from_pattern(pattern)
 
     def _set_pattern(self, pattern=None):
         """ Set pattern data for the DataSet. """
@@ -198,12 +203,11 @@ class DataSet(DataSetPattern, DataFrame):
         cond_prs = noisy_conditionals(network, indexes, epsilon / 2)
         return network, cond_prs
 
-    def to_pattern(self, path, epsilon=0.1, degree=2, pseudonyms=None,
-                   deletes=None, retains=None) -> None:
+    def to_pattern(self, epsilon=0.1, degree=2, pseudonyms=None,
+                   deletes=None, retains=None) -> dict:
         """
-        Serialize this dataset's patterns into a json file.
+        Serialize this dataset's patterns into a dict object.
         """
-        import json
         network, cond_prs = self._construct_bayesian_network(
             epsilon, degree=degree, pseudonyms=pseudonyms, deletes=deletes,
             retains=retains)
@@ -215,6 +219,14 @@ class DataSet(DataSetPattern, DataFrame):
             "prs": cond_prs,
             "records": self._records
         })
+        return pattern
+
+    def to_pattern_file(self, path, epsilon=0.1, degree=2, pseudonyms=None,
+                        deletes=None, retains=None) -> None:
+        """
+        Serialize this dataset's patterns into a json file.
+        """
+        pattern = self.to_pattern(epsilon, degree, pseudonyms, deletes, retains)
         with open(path, 'w') as fp:
             json.dump(pattern, fp, indent=2)
 
