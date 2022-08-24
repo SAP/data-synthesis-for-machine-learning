@@ -7,6 +7,8 @@ import json
 from pandas import DataFrame, Series
 
 from ds4ml.attribute import Attribute
+from ds4ml.synthesizer import greedy_bayes, noisy_conditionals, noisy_distributions
+from ds4ml.utils import normalize_distribution
 
 
 class DataSetPattern:
@@ -189,15 +191,17 @@ class DataSet(DataSetPattern, DataFrame):
         for col in nodes:
             indexes[col] = self[col].bin_indexes()
         if indexes.shape[1] < 2:
-            raise Exception('If infer bayesian network, it requires at least 2 '
-                            'attributes in dataset.')
+            print('Warning: when there is only one attribute in dataset, this '
+                  'algorithm inject noises to its probability distribution.')
+            prs = noisy_distributions(indexes, list(indexes), epsilon)
+            prs['freq'] = normalize_distribution(prs['freq'])
+            return None, prs
 
         # Bayesian network is defined as a set of AP (attribute-parent) pairs.
         # e.g. [(x1, p1), (x2, p2), ...], and pi is the parents of xi.
         #
         # The algorithm follows the composability property of differential
         # privacy, so the privacy budget is split to two parts.
-        from ds4ml.synthesizer import greedy_bayes, noisy_conditionals
         network = greedy_bayes(indexes, epsilon / 2, degree=degree,
                                retains=retains)
         cond_prs = noisy_conditionals(network, indexes, epsilon / 2)
@@ -241,13 +245,25 @@ class DataSet(DataSetPattern, DataFrame):
         pseudonyms = pseudonyms or (
                 self._config is not None and self._config['pseudonyms']) or []
         retains = retains or []
+        records = records if records is not None else self._records
+
         if self._network is None and self._cond_prs is None:
             self._network, self._cond_prs = self._construct_bayesian_network(
                 epsilon, degree=degree, pseudonyms=pseudonyms, deletes=deletes,
                 retains=retains)
 
+            # if bayesian network is empty, and probability is not empty, there
+            # is only one column in the dataset.
+            if self._network is None and self._cond_prs is not None:
+                prs = self._cond_prs['freq']
+                from numpy import random
+                sampling = Series(random.choice(len(prs), size=records, p=prs))
+                # this is the only column label in this dataset
+                col = self.columns[0]
+                attr = self[col].choice(indexes=sampling)
+                return DataFrame(attr, columns=self.columns)
+
         columns = [col for col in self.columns.values if col not in deletes]
-        records = records if records is not None else self._records
         sampling = self._sampling_dataset(self._network, self._cond_prs, records)
         frame = DataFrame(columns=columns)
         for col in self.columns:
