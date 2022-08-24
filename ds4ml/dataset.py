@@ -193,9 +193,10 @@ class DataSet(DataSetPattern, DataFrame):
         if indexes.shape[1] < 2:
             print('Warning: when there is only one attribute in dataset, this '
                   'algorithm inject noises to its probability distribution.')
-            prs = noisy_distributions(indexes, list(indexes), epsilon)
-            prs['freq'] = normalize_distribution(prs['freq'])
-            return None, prs
+            _cols = list(indexes)
+            prs = noisy_distributions(indexes, _cols, epsilon)
+            probability = {_cols[0]: normalize_distribution(prs['freq'])}
+            return None, probability
 
         # Bayesian network is defined as a set of AP (attribute-parent) pairs.
         # e.g. [(x1, p1), (x2, p2), ...], and pi is the parents of xi.
@@ -255,11 +256,11 @@ class DataSet(DataSetPattern, DataFrame):
             # if bayesian network is empty, and probability is not empty, there
             # is only one column in the dataset.
             if self._network is None and self._cond_prs is not None:
-                prs = self._cond_prs['freq']
-                from numpy import random
-                sampling = Series(random.choice(len(prs), size=records, p=prs))
                 # this is the only column label in this dataset
                 col = self.columns[0]
+                prs = self._cond_prs[col]
+                from numpy import random
+                sampling = Series(random.choice(len(prs), size=records, p=prs))
                 attr = self[col].choice(indexes=sampling)
                 return DataFrame(attr, columns=self.columns)
 

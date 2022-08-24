@@ -89,7 +89,15 @@ def test_synthesize_for_one_column():
     dataset = DataSet(adults01[['age']])
     df = dataset.synthesize()
     assert df.size == adults01[['age']].size
-    assert min(df['age']) <= min(dataset['age']) <= max(df['age']) <= max(dataset['age'])
+    assert min(df['age']) <= max(dataset['age'])
+    assert min(dataset['age']) <= max(df['age'])
+
+
+def test_to_pattern_for_one_column():
+    dataset = DataSet(adults01[['age']])
+    pattern = dataset.to_pattern()
+    assert pattern['network'] is None
+    assert 'age' in pattern['prs']
 
 
 def test_synthesize_with_pseudonyms():
