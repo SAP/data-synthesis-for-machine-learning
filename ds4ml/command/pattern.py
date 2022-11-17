@@ -81,8 +81,8 @@ def main():
     if args.output is None:
         name = file_name(args.file)
         args.output = f'{name}-pattern.json'
-    dataset.to_pattern(path=args.output, epsilon=args.epsilon, deletes=deletes,
-                       pseudonyms=pseudonyms, retains=[])
+    dataset.to_pattern_file(path=args.output, epsilon=args.epsilon,
+                            deletes=deletes, pseudonyms=pseudonyms, retains=[])
 
     duration = time.time() - start
     print(f'Analyze and serialize the patterns of {args.file} at {args.output} '

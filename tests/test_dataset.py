@@ -85,6 +85,44 @@ def test_synthesize():
     assert df.size == dataset.size
 
 
+def test_synthesize_for_one_column():
+    dataset = DataSet(adults01[['age']])
+    df = dataset.synthesize()
+    assert df.size == adults01[['age']].size
+    assert min(df['age']) <= max(dataset['age'])
+    assert min(dataset['age']) <= max(df['age'])
+
+
+def test_to_pattern_for_one_column():
+    dataset = DataSet(adults01[['age']])
+    pattern = dataset.to_pattern()
+    assert pattern['network'] is None
+    assert 'age' in pattern['prs']
+
+
+def test_synthesize_from_pattern():
+    pattern = {'attrs':
+                   {'age': {'name': 'age', 'type': 'integer',
+                            'categorical': False, 'min': 19, 'max': 59,
+                            'decimals': None,
+                            'bins': [19.0, 21.0, 23.0, 25.0, 27.0, 29.0, 31.0,
+                                     33.0, 35.0, 37.0, 39.0, 41.0, 43.0, 45.0,
+                                     47.0, 49.0, 51.0, 53.0, 55.0, 57.0],
+                            'prs': [0.067, 0.0, 0.067, 0.033, 0.033, 0.033, 0.1,
+                                    0.033, 0.0333, 0.1333, 0.1011, 0.033, 0.0667,
+                                    0.0, 0.0, 0.1, 0.0333, 0.0667, 0.0333, 0.0333]
+                            }
+                    },
+               'config': {'pseudonyms': None},
+               'network': None,
+               'prs': {'age': [0.06049, 0.0293, 0.079, 0.0, 0.035, 0.002, 0.090,
+                               0.0581, 0.0357, 0.151, 0.084, 0.00892, 0.06809,
+                               0.0047, 0.0316, 0.1161, 0.042, 0.064, 0.04, 0.0]},
+               'records': 30}
+    df = DataSet.from_pattern(pattern).synthesize()
+    assert df.size == 30
+
+
 def test_synthesize_with_pseudonyms():
     dataset = DataSet(adults01)
     df = dataset.synthesize(pseudonyms=['salary'])
